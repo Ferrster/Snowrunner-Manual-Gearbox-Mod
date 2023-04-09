@@ -2,7 +2,9 @@
 #include "Xinput.h"
 #include "detours.h"
 #include <consoleapi.h>
+#include <filesystem>
 #include <libloaderapi.h>
+#include <memory>
 #include <minwindef.h>
 
 #include "fmt/format.h"
@@ -22,43 +24,19 @@
 #include "game_data/game_data.h"
 #include "spdlog/spdlog.h"
 #include "utils/format_helpers.h"
+#include "utils/input_reader.h"
 #include "utils/logging.h"
 
 #define DETOUR_ATTACH(Src)                                                     \
-  DetourAttach(&(PVOID &)Src, (PVOID)DETOUR_HOOK_NAME(Src))
+  DetourAttach(&(PVOID &)Src, (PVOID)SMGM_HOOK_NAME(Src))
 #define DETOUR_DETACH(Src)                                                     \
-  DetourDetach(&(PVOID &)Src, (PVOID)DETOUR_HOOK_NAME(Src))
+  DetourDetach(&(PVOID &)Src, (PVOID)SMGM_HOOK_NAME(Src))
+
+std::atomic_bool g_Shutdown = false;
+smgm::InputReader *g_InputReader = nullptr;
 
 DWORD WINAPI MainThread(LPVOID param) {
-  while (true) {
-    if (GetAsyncKeyState(VK_F1)) {
-      break;
-    }
-
-    Vehicle *curVehicle = smgm::GetCurrentVehicle();
-
-    if (curVehicle == nullptr) {
-      continue;
-    }
-
-    curVehicle->TruckAction->AutoGearSwitch = false;
-
-    if (XINPUT_KEYSTROKE ks;
-        XInputGetKeystroke(XUSER_INDEX_ANY, 0, &ks) == ERROR_SUCCESS) {
-      if (ks.Flags & XINPUT_KEYSTROKE_KEYDOWN) {
-        switch (ks.VirtualKey) {
-        case VK_PAD_DPAD_LEFT: {
-          smgm::SwitchToPrevGear(curVehicle);
-          break;
-        }
-        case VK_PAD_DPAD_RIGHT: {
-          smgm::SwitchToNextGear(curVehicle);
-          break;
-        }
-        }
-      }
-    }
-  }
+  g_InputReader->WaitForThread();
 
   FreeLibraryAndExitThread((HMODULE)param, 0);
 
@@ -87,18 +65,29 @@ void Init(HINSTANCE hinst, DWORD dwReason, LPVOID reserved) {
   DetourUpdateThread(GetCurrentThread());
 
   DETOUR_ATTACH(SwitchAWD);
-  DETOUR_ATTACH(SwitchGear);
+  DETOUR_ATTACH(ShiftGear);
   DETOUR_ATTACH(GetMaxGear);
-  DETOUR_ATTACH(SwitchToAutoGear);
+  DETOUR_ATTACH(ShiftToAutoGear);
+  DETOUR_ATTACH(SetCurrentVehicle);
 
   DetourTransactionCommit();
 
-  CreateThread(0, 0, MainThread, hinst, 0, 0);
+  g_InputReader = new smgm::InputReader;
+  g_InputReader->BindKeyboard(VK_F1, [] { g_InputReader->Stop(); });
+  g_InputReader->ReadInputConfig(std::filesystem::current_path() / "smgm.ini");
+  g_InputReader->Start();
+
+  if (Vehicle *veh = smgm::GetCurrentVehicle()) {
+    veh->TruckAction->AutoGearSwitch = false;
+  }
 
   HMODULE gameBase = GetModuleHandleA(NULL);
   LOG_DEBUG(FormatDataTable(
       "Mod initialized", std::make_pair("Game base", gameBase),
-      std::make_pair("Truck Control Ptr", *GameRelatedData::TruckControlPtr)));
+      std::make_pair("Current path",
+                     std::filesystem::current_path().string())));
+
+  CreateThread(0, 0, MainThread, hinst, 0, 0);
 }
 
 void Teardown(HINSTANCE hinst, DWORD dwReason, LPVOID reserved) {
@@ -108,11 +97,14 @@ void Teardown(HINSTANCE hinst, DWORD dwReason, LPVOID reserved) {
   DetourUpdateThread(GetCurrentThread());
 
   DETOUR_DETACH(SwitchAWD);
-  DETOUR_DETACH(SwitchGear);
+  DETOUR_DETACH(ShiftGear);
   DETOUR_DETACH(GetMaxGear);
-  DETOUR_DETACH(SwitchToAutoGear);
+  DETOUR_DETACH(ShiftToAutoGear);
+  DETOUR_DETACH(SetCurrentVehicle);
 
   DetourTransactionCommit();
+
+  // free(g_InputReader);
 
 #ifndef SMGM_NO_CONSOLE
   FreeConsole();

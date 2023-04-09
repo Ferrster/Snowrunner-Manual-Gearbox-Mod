@@ -26,7 +26,7 @@ class combine_combineTruckAction {
 public:
   char pad_0000[48];          // 0x0000
   class Vehicle *Veh;         // 0x0030
-  float N00000056;            // 0x0038
+  float PowerCoef;            // 0x0038
   bool AutoGearSwitch;        // 0x003C
   char pad_003D[3];           // 0x003D
   float WheelTurn;            // 0x0040
@@ -37,8 +37,8 @@ public:
   char pad_004B[21];          // 0x004B
   class Unknown_1 *N0000005B; // 0x0060
   char pad_0068[8];           // 0x 0068
-  uint32_t Gear_1;            // 0x0070
-  uint32_t Gear_2;            // 0x0074
+  std::int32_t Gear_1;        // 0x0070
+  std::int32_t Gear_2;        // 0x0074
   char pad_0078[56];          // 0x0078
   float N00000065;            // 0x00B0
   float N00000319;            // 0x00B4
@@ -47,7 +47,7 @@ public:
   char pad_00C0[24];          // 0x00C0
   float N0000006A;            // 0x00D8
   float SwitchThreshold;      // 0x00DC
-  uint32_t NextGear;          // 0x00E0
+  std::int32_t NextGear;      // 0x00E0
   char pad_00E4[860];         // 0x00E4
 };                            // Size: 0x0440
 
@@ -59,7 +59,47 @@ public:
   class combine_combineTruckPostSimulationListener
       *TruckPostSimulationListener; // 0x0068
   char pad_0070[976];               // 0x0070
-};                                  // Size: 0x0440
+
+  void SetPowerCoef(float coef);
+
+  std::int32_t GetMaxGear() const;
+
+  /**
+   * @brief Switches to @p targetGear gear, if possible.
+   *
+   * @param targetGear gear to switch to
+   * @param powerCoef power coef to set after switching. Low gears have
+   * different coefs.
+   * @return true - if gear was switched, false otherwise
+   */
+  bool ShiftToGear(std::int32_t targetGear, float powerCoef = 1.f);
+
+  /**
+   * @brief Switches to next gear, if possible.
+   *
+   * @param veh vehicle to switch the gear on
+   * @return true - if gear was switched, false otherwise
+   */
+  bool ShiftToNextGear();
+
+  /**
+   * @brief Switches to previous gear, if possible.
+   *
+   * @param veh vehicle to switch the gear on
+   * @return true - if gear was switched, false otherwise
+   */
+  bool ShiftToPrevGear();
+
+  bool ShiftToHighGear();
+
+  bool ShiftToReverseGear();
+
+  bool ShiftToLowGear();
+
+  bool ShiftToLowPlusGear();
+
+  bool ShiftToLowMinusGear();
+}; // Size: 0x0440
 
 class combine_TRUCK_ADDON_MODEL {
 public:
