@@ -1,4 +1,4 @@
-set(TARGET_NAME snowrunner-manual-gearbox-mod)
+set(TARGET_NAME smgm)
 
 find_package(fmt REQUIRED)
 find_package(spdlog 1.11 REQUIRED)
