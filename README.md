@@ -63,7 +63,13 @@ To apply new changes you must restart the mod.
 * Close console window
 * Run _smgm-loader.exe_ again
 
+## Known issues
 
+* Gearbox UI is not updated when you shift gears
+* First gear will be labeled as _Low+_ if your truck has that gear
+* No engine stalling
+* You can use _Diff Lock_ when the truck is on first gear. But only while you hold the in-game key for shifting gears
+* Key presses are captured even when game is collapsed
 
 ## Building
 
