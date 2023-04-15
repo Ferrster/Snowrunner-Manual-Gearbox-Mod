@@ -206,6 +206,12 @@ bool InputReader::ReadInputConfig(const std::filesystem::path &configPath) {
                 veh->ShiftToNextGear();
               }
             };
+          case SHIFT_REVERSE_GEAR:
+            return [] {
+              if (auto *veh = smgm::GetCurrentVehicle()) {
+                veh->ShiftToReverseGear();
+              }
+            };
           }
 
           return [] {};
