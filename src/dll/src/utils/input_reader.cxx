@@ -1,7 +1,7 @@
-#include "utils/input_reader.h"
-#include "custom_functions.h"
-#include "utils/format_helpers.h"
-#include "utils/logging.h"
+#include "smgm/utils/input_reader.h"
+#include "smgm/smgm.h"
+#include "smgm/utils/format_helpers.h"
+#include "smgm/utils/logging.h"
 #include <Xinput.h>
 #include <boost/describe/enum_to_string.hpp>
 #include <boost/property_tree/ptree_fwd.hpp>
@@ -54,7 +54,6 @@ void InputReader::Start() {
   WaitForThread();
 
   m_bStop = false;
-
   m_readerThread = std::thread(&InputReader::ProcessKeys, this);
 }
 
@@ -66,16 +65,18 @@ void InputReader::WaitForThread() {
 
 void InputReader::Stop() { m_bStop = true; }
 
-void InputReader::BindJoystick(WORD key, FncOnPressed &&onPressed) {
+void InputReader::BindJoystick(WORD key, FncKeyPressCb &&onPressed,
+                               FncKeyPressCb &&onReleased) {
   std::lock_guard lck(m_mtx);
 
-  m_keysJoystick.insert({key, {onPressed}});
+  m_keysJoystick.insert({key, {onPressed, onReleased}});
 }
 
-void InputReader::BindKeyboard(SHORT key, FncOnPressed &&onPressed) {
+void InputReader::BindKeyboard(SHORT key, FncKeyPressCb &&onPressed,
+                               FncKeyPressCb &&onReleased) {
   std::lock_guard lck(m_mtx);
 
-  m_keysKeyboard.insert({static_cast<WORD>(key), {onPressed}});
+  m_keysKeyboard.insert({static_cast<WORD>(key), {onPressed, onReleased}});
 }
 
 void InputReader::ProcessKeys() {
@@ -93,7 +94,13 @@ void InputReader::ProcessKeys() {
           }
         }
       } else {
-        info.bPressed = false;
+        if (info.bPressed) {
+          info.bPressed = false;
+
+          if (info.onReleased) {
+            info.onReleased();
+          }
+        }
       }
     }
 
@@ -113,6 +120,10 @@ void InputReader::ProcessKeys() {
         }
       } else if (ks.Flags & XINPUT_KEYSTROKE_KEYUP) {
         info.bPressed = false;
+
+        if (info.onReleased) {
+          info.onReleased();
+        }
       }
     }
   }
@@ -121,31 +132,33 @@ void InputReader::ProcessKeys() {
 }
 
 bool InputReader::ReadInputConfig(const std::filesystem::path &configPath) {
+  LOG_DEBUG(fmt::format("Reading config file at {}", configPath.u8string()));
+
   if (!std::filesystem::exists(configPath)) {
     LOG_DEBUG(fmt::format(
         "No config file found at path {}. Generating default one...",
-        configPath.string()));
+        configPath.u8string()));
 
     WriteDefaultConfig(configPath);
   }
 
   std::unique_lock lck(m_mtx);
-
   boost::property_tree::ptree config;
+
   try {
-    boost::property_tree::ini_parser::read_ini(configPath.string(), config);
+    boost::property_tree::ini_parser::read_ini(configPath.u8string(), config);
 
     static const auto ReadKeybindings =
-        [](const boost::property_tree::ptree &pt,
-           const std::string &key) -> std::unordered_map<WORD, FncOnPressed> {
-      std::unordered_map<WORD, FncOnPressed> result;
+        [&](const boost::property_tree::ptree &pt, const std::string &key)
+        -> std::unordered_map<WORD, std::pair<FncKeyPressCb, FncKeyPressCb>> {
+      std::unordered_map<WORD, std::pair<FncKeyPressCb, FncKeyPressCb>> result;
 
       boost::mp11::mp_for_each<
           boost::describe::describe_enumerators<InputAction>>([&](auto D) {
-        const auto action = [&]() -> FncOnPressed {
+        const auto actionOnPress = [&]() -> FncKeyPressCb {
           static const auto ShiftGearFnc = [](std::int32_t gear) {
             return [gear] {
-              if (auto *veh = smgm::GetCurrentVehicle()) {
+              if (auto *veh = SMGM::GetCurrentVehicle()) {
                 veh->ShiftToGear(gear);
               }
             };
@@ -170,25 +183,25 @@ bool InputReader::ReadInputConfig(const std::filesystem::path &configPath) {
             return ShiftGearFnc(8);
           case SHIFT_HIGH_GEAR:
             return [] {
-              if (auto *veh = smgm::GetCurrentVehicle()) {
+              if (auto *veh = SMGM::GetCurrentVehicle()) {
                 veh->ShiftToHighGear();
               }
             };
           case SHIFT_LOW_GEAR:
             return [] {
-              if (auto *veh = smgm::GetCurrentVehicle()) {
+              if (auto *veh = SMGM::GetCurrentVehicle()) {
                 veh->ShiftToLowGear();
               }
             };
           case SHIFT_LOW_PLUS_GEAR:
             return [] {
-              if (auto *veh = smgm::GetCurrentVehicle()) {
+              if (auto *veh = SMGM::GetCurrentVehicle()) {
                 veh->ShiftToLowPlusGear();
               }
             };
           case SHIFT_LOW_MINUS_GEAR:
             return [] {
-              if (auto *veh = smgm::GetCurrentVehicle()) {
+              if (auto *veh = SMGM::GetCurrentVehicle()) {
                 veh->ShiftToLowMinusGear();
               }
             };
@@ -196,25 +209,43 @@ bool InputReader::ReadInputConfig(const std::filesystem::path &configPath) {
             return ShiftGearFnc(0);
           case SHIFT_PREV_AUTO_GEAR:
             return [] {
-              if (auto *veh = smgm::GetCurrentVehicle()) {
+              if (auto *veh = SMGM::GetCurrentVehicle()) {
                 veh->ShiftToPrevGear();
               }
             };
           case SHIFT_NEXT_AUTO_GEAR:
             return [] {
-              if (auto *veh = smgm::GetCurrentVehicle()) {
+              if (auto *veh = SMGM::GetCurrentVehicle()) {
                 veh->ShiftToNextGear();
               }
             };
           case SHIFT_REVERSE_GEAR:
             return [] {
-              if (auto *veh = smgm::GetCurrentVehicle()) {
+              if (auto *veh = SMGM::GetCurrentVehicle()) {
                 veh->ShiftToReverseGear();
               }
+            };
+          case CLUTCH:
+            return [] {
+              auto *mod = SMGM::GetInstance();
+
+              mod->ToggleClutch(true);
             };
           }
 
           return [] {};
+        }();
+        const auto actionOnReleased = [&]() -> FncKeyPressCb {
+          switch (D.value) {
+          case CLUTCH:
+            return [] {
+              auto *mod = SMGM::GetInstance();
+
+              mod->ToggleClutch(false);
+            };
+          default:
+            return [] {};
+          }
         }();
 
         const std::string iniKey = fmt::format("{}.{}", key, D.name);
@@ -224,26 +255,41 @@ bool InputReader::ReadInputConfig(const std::filesystem::path &configPath) {
                               v.has_value() ? v.value() : "<empty>"));
 
         if (v.has_value() && !v.value().empty()) {
-          result.insert({FromHex(v.value()), std::move(action)});
+          result.insert(
+              {FromHex(v.value()),
+               {std::move(actionOnPress), std::move(actionOnReleased)}});
+        }
+        if (!v.has_value()) {
+          config.add(fmt::format("{}.{}", key, D.name), std::string{});
         }
       });
 
       return result;
     };
 
-    for (auto &&[key, fnc] : ReadKeybindings(
+    for (auto &&[key, actions] : ReadKeybindings(
              config, boost::describe::enum_to_string(KEYBOARD, "Keyboard"))) {
-      m_keysKeyboard.emplace(key, KeyInfo{std::move(fnc)});
+      m_keysKeyboard.emplace(
+          key, KeyInfo{std::move(actions.first), std::move(actions.second)});
     }
 
-    for (auto &&[key, fnc] : ReadKeybindings(
+    for (auto &&[key, actions] : ReadKeybindings(
              config, boost::describe::enum_to_string(JOYSTICK, "Joystick"))) {
-      m_keysJoystick.emplace(key, KeyInfo{std::move(fnc)});
+      m_keysJoystick.emplace(
+          key, KeyInfo{std::move(actions.first), std::move(actions.second)});
     }
   } catch (const std::exception &e) {
-    LOG_DEBUG(fmt::format("Failed to read config file: {}", e.what()));
+    LOG_DEBUG(fmt::format("Failed to read config file {}: {}",
+                          configPath.u8string(), e.what()));
 
     return false;
+  }
+
+  try {
+    boost::property_tree::ini_parser::write_ini(configPath.u8string(), config);
+  } catch (const std::exception &e) {
+    LOG_DEBUG(fmt::format("Failed to write config to file {}: {}",
+                          configPath.u8string(), e.what()));
   }
 
   return true;
@@ -280,10 +326,10 @@ void InputReader::WriteDefaultConfig(const std::filesystem::path &configPath) {
             });
       });
   try {
-    boost::property_tree::ini_parser::write_ini(configPath.string(), config);
+    boost::property_tree::ini_parser::write_ini(configPath.u8string(), config);
   } catch (const std::exception &e) {
-    LOG_DEBUG(
-        fmt::format("Failed to create default config file: {}", e.what()));
+    LOG_DEBUG(fmt::format("Failed to create default config file {}: {}",
+                          configPath.u8string(), e.what()));
   }
 }
 

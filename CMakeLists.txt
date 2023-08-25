@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.14)
 
-project(SnowrunnerManualGearboxMod VERSION 0.1 LANGUAGES CXX)
+project(SMGM VERSION 0.2 LANGUAGES CXX)
 
 if(NOT MSVC)
   message(FATAL_ERROR "This project supports only Visual C++ compilers!")
@@ -9,12 +9,12 @@ endif()
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-include(cmake/setupConan.cmake)
-
 set(SMGM_NO_CONSOLE OFF CACHE BOOL "Do not use console window for log display")
 set(SMGM_PATH_TO_VCVARS64 "G:\\Programs\\Visual Studio 19\\VC\\Auxiliary\\Build\\vcvars64.bat" CACHE PATH "Path to vcvars64.bat. Needed to build detours library")
 
+include(cmake/setupConan.cmake)
 include(ExternalProject)
+
 ExternalProject_Add(DetoursLib
   GIT_REPOSITORY https://github.com/microsoft/Detours.git
   GIT_TAG origin/main

@@ -4,22 +4,13 @@ find_package(fmt REQUIRED)
 find_package(spdlog 1.11 REQUIRED)
 find_package(Boost 1.80.0)
 
-# find_package(Boost 1.80 COMPONENTS log log_setup REQUIRED)
+file(GLOB_RECURSE TARGET_HEADERS ${CMAKE_CURRENT_SOURCE_DIR}/include/*.h*)
+file(GLOB_RECURSE TARGET_SRCS ${CMAKE_CURRENT_SOURCE_DIR}/src/*.cxx)
 add_library(${TARGET_NAME} SHARED
-  game_data/game_data.h
-  game_data/game_data.cxx
-  game_data/data_types.h
-  game_data/vehicle.cxx
-  utils/logging.h
-  utils/logging.cxx
-  utils/format_helpers.h
-  utils/format_helpers.cxx
-  utils/input_reader.h
-  utils/input_reader.cxx
-  custom_functions.h
-  custom_functions.cxx
-  main.cxx
+  ${TARGET_HEADERS}
+  ${TARGET_SRCS}
 )
+set_target_properties(${TARGET_NAME} PROPERTIES LINKER_LANGUAGE CXX)
 target_compile_definitions(${TARGET_NAME}
   PUBLIC BOOST_USE_WINAPI_VERSION=1536 # <= Win Vista
   PUBLIC NOMINMAX
@@ -38,7 +29,8 @@ target_link_directories(${TARGET_NAME}
 target_include_directories(${TARGET_NAME}
   PRIVATE ${BOOST_INCLUDE_DIR}
   PRIVATE ${SPDLOG_INCLUDE_DIR}
-  PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}
+  PUBLIC ${CMAKE_CURRENT_BINARY_DIR}
+  PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include
 )
 target_link_libraries(${TARGET_NAME}
   PUBLIC detours

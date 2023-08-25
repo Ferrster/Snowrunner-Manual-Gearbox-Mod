@@ -1,6 +1,7 @@
 #include "Windows.h"
 #include "Xinput.h"
 #include "detours.h"
+
 #include <consoleapi.h>
 #include <filesystem>
 #include <libloaderapi.h>
@@ -19,13 +20,11 @@
 #include <winerror.h>
 #include <winuser.h>
 
-#include "custom_functions.h"
-#include "game_data/data_types.h"
-#include "game_data/game_data.h"
-#include "spdlog/spdlog.h"
-#include "utils/format_helpers.h"
-#include "utils/input_reader.h"
-#include "utils/logging.h"
+#include "smgm/game/data_types/vehicle.h"
+#include "smgm/smgm.h"
+#include "smgm/utils/format_helpers.h"
+#include "smgm/utils/input_reader.h"
+#include "smgm/utils/logging.h"
 
 #define DETOUR_ATTACH(Src)                                                     \
   DetourAttach(&(PVOID &)Src, (PVOID)SMGM_HOOK_NAME(Src))
@@ -58,7 +57,7 @@ void Init(HINSTANCE hinst, DWORD dwReason, LPVOID reserved) {
   spdlog::set_level(spdlog::level::debug);
   spdlog::set_pattern("[%H:%M:%S %z] [%n] [%^---%L---%$] [thread %t] %v");
 
-  LOG_DEBUG("SnowRunner Manual Gearbox v0.1");
+  LOG_DEBUG("SnowRunner Manual Gearbox v0.2");
 
   DetourRestoreAfterWith();
   DetourTransactionBegin();
@@ -77,15 +76,15 @@ void Init(HINSTANCE hinst, DWORD dwReason, LPVOID reserved) {
   g_InputReader->ReadInputConfig(std::filesystem::current_path() / "smgm.ini");
   g_InputReader->Start();
 
-  if (Vehicle *veh = smgm::GetCurrentVehicle()) {
-    veh->TruckAction->AutoGearSwitch = false;
+  if (smgm::Vehicle *veh = smgm::SMGM::GetCurrentVehicle()) {
+    veh->truckAction->isAutoEnabled = false;
   }
 
   HMODULE gameBase = GetModuleHandleA(NULL);
   LOG_DEBUG(FormatDataTable(
       "Mod initialized", std::make_pair("Game base", gameBase),
       std::make_pair("Current path",
-                     std::filesystem::current_path().string())));
+                     std::filesystem::current_path().u8string())));
 
   CreateThread(0, 0, MainThread, hinst, 0, 0);
 }

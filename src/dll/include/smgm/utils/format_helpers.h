@@ -1,7 +1,5 @@
 #pragma once
 
-#include "game_data/data_types.h"
-#include <fmt/core.h>
 #include <iterator>
 #include <type_traits>
 

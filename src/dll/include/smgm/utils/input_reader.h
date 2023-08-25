@@ -2,7 +2,6 @@
 
 #include "Windows.h"
 #include "Xinput.h"
-#include "custom_functions.h"
 
 #include <atomic>
 #include <boost/property_tree/ptree_fwd.hpp>
@@ -23,14 +22,15 @@ BOOST_DEFINE_ENUM(InputAction, SHIFT_1_GEAR, SHIFT_2_GEAR, SHIFT_3_GEAR,
                   SHIFT_8_GEAR, SHIFT_HIGH_GEAR, SHIFT_LOW_GEAR,
                   SHIFT_LOW_PLUS_GEAR, SHIFT_LOW_MINUS_GEAR, SHIFT_NEUTRAL,
                   SHIFT_PREV_AUTO_GEAR, SHIFT_NEXT_AUTO_GEAR,
-                  SHIFT_REVERSE_GEAR);
+                  SHIFT_REVERSE_GEAR, CLUTCH);
 
 class InputReader {
 public:
-  using FncOnPressed = std::function<void()>;
+  using FncKeyPressCb = std::function<void()>;
 
   struct KeyInfo {
-    FncOnPressed onPressed;
+    FncKeyPressCb onPressed;
+    FncKeyPressCb onReleased;
     bool bPressed = false;
   };
 
@@ -53,9 +53,11 @@ public:
 
   void Stop();
 
-  void BindKeyboard(SHORT key, FncOnPressed &&onPressed);
+  void BindKeyboard(SHORT key, FncKeyPressCb &&onPressed,
+                    FncKeyPressCb &&onReleased = {});
 
-  void BindJoystick(WORD key, FncOnPressed &&onPressed);
+  void BindJoystick(WORD key, FncKeyPressCb &&onPressed,
+                    FncKeyPressCb &&onReleased = {});
 
   void WaitForThread();
 
