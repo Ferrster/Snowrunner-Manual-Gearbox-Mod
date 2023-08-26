@@ -24,6 +24,7 @@
 #include "imgui.h"
 #include "smgm/game/data_types/vehicle.h"
 #include "smgm/smgm.h"
+#include "smgm/ui/ui.h"
 #include "smgm/utils/format_helpers.h"
 #include "smgm/utils/input_reader.h"
 #include "smgm/utils/logging.h"
@@ -35,6 +36,7 @@
 
 std::atomic_bool g_Shutdown = false;
 smgm::InputReader *g_InputReader = nullptr;
+smgm::Ui g_Ui;
 
 // ===================================================================
 #include "d3d11.h"
@@ -57,20 +59,6 @@ WNDPROC oWndProc;
 ID3D11Device *pDevice = NULL;
 ID3D11DeviceContext *pContext = NULL;
 ID3D11RenderTargetView *mainRenderTargetView;
-
-void InitImGui() {
-  ImGui::CreateContext();
-  ImGuiIO &io = ImGui::GetIO();
-  io.ConfigFlags = ImGuiConfigFlags_NoMouseCursorChange;
-  ImGui_ImplWin32_Init(window);
-  ImGui_ImplDX11_Init(pDevice, pContext);
-}
-
-void DestroyImGui() {
-  ImGui_ImplDX11_Shutdown();
-  ImGui_ImplWin32_Shutdown();
-  ImGui::DestroyContext();
-}
 
 LRESULT __stdcall WndProc(const HWND hWnd, UINT uMsg, WPARAM wParam,
                           LPARAM lParam) {
@@ -98,7 +86,8 @@ HRESULT __stdcall hkPresent(IDXGISwapChain *pSwapChain, UINT SyncInterval,
       pBackBuffer->Release();
       oWndProc =
           (WNDPROC)SetWindowLongPtr(window, GWLP_WNDPROC, (LONG_PTR)WndProc);
-      InitImGui();
+
+      g_Ui.Init({window, pDevice, pContext, mainRenderTargetView});
       init = true;
     }
 
@@ -123,16 +112,8 @@ HRESULT __stdcall hkPresent(IDXGISwapChain *pSwapChain, UINT SyncInterval,
     return 0;
   }
 
-  ImGui_ImplDX11_NewFrame();
-  ImGui_ImplWin32_NewFrame();
-  ImGui::NewFrame();
+  g_Ui.Draw();
 
-  ImGui::ShowDemoWindow();
-
-  ImGui::Render();
-
-  pContext->OMSetRenderTargets(1, &mainRenderTargetView, NULL);
-  ImGui_ImplDX11_RenderDrawData(ImGui::GetDrawData());
   return oPresent(pSwapChain, SyncInterval, Flags);
 }
 
@@ -153,7 +134,9 @@ DWORD WINAPI MainThread(LPVOID param) {
 
   g_InputReader->WaitForThread();
   LOG_DEBUG("Exiting...");
-  DestroyImGui();
+
+  g_Ui.Destroy();
+
   Sleep(1000);
   FreeLibraryAndExitThread((HMODULE)param, 0);
 
