@@ -36,24 +36,5 @@ public:
 
   /// Returns currently operated vehicle
   static Vehicle *GetCurrentVehicle();
-
-  inline bool IsClutchPressed() const noexcept { return m_bClutchPressed; }
-
-  inline bool IsClutchIgnored() const noexcept { return m_bIgnoreClutch; }
-
-  void ToggleClutch(bool state);
-
-  const Vehicle::GearParams &GetTargetGear() const noexcept {
-    return m_targetGear;
-  }
-
-  void SetTargetGear(const Vehicle::GearParams &targetGear);
-
-private:
-  bool m_bClutchPressed = false;
-  bool m_bIgnoreClutch = false;
-
-  ///  Gear to switch to after releasing clutch
-  Vehicle::GearParams m_targetGear;
 };
 } // namespace smgm

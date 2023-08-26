@@ -28,20 +28,6 @@ Vehicle::GearParams Vehicle::GetCurrentGear() const {
 }
 
 bool Vehicle::ShiftToGear(std::int32_t targetGear, float powerCoef) {
-  auto *mod = SMGM::GetInstance();
-
-  if (!mod->IsClutchIgnored()) {
-    if (mod->IsClutchPressed()) {
-      mod->SetTargetGear(GearParams{targetGear, powerCoef});
-
-      return false;
-    } else {
-      Stall();
-
-      return false;
-    }
-  }
-
   std::int32_t gear = std::clamp(targetGear, -1, GetMaxGear() + 1);
 
   bool bSwitched = SMGM_CALL_HOOK(ShiftGear, this, gear);

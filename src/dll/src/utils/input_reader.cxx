@@ -225,27 +225,12 @@ bool InputReader::ReadInputConfig(const std::filesystem::path &configPath) {
                 veh->ShiftToReverseGear();
               }
             };
-          case CLUTCH:
-            return [] {
-              auto *mod = SMGM::GetInstance();
-
-              mod->ToggleClutch(true);
-            };
           }
 
           return [] {};
         }();
         const auto actionOnReleased = [&]() -> FncKeyPressCb {
-          switch (D.value) {
-          case CLUTCH:
-            return [] {
-              auto *mod = SMGM::GetInstance();
-
-              mod->ToggleClutch(false);
-            };
-          default:
-            return [] {};
-          }
+          return [] {};
         }();
 
         const std::string iniKey = fmt::format("{}.{}", key, D.name);

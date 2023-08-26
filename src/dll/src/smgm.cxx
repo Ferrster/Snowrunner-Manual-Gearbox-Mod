@@ -51,32 +51,4 @@ Vehicle *SMGM::GetCurrentVehicle() {
   return truckCtrl->curVehicle;
 }
 
-void SMGM::ToggleClutch(bool state) {
-  if (m_bClutchPressed == state)
-    return;
-
-  Vehicle *veh = GetCurrentVehicle();
-
-  if (!veh)
-    return;
-
-  m_bClutchPressed = state;
-  if (state) {
-    m_targetGear = veh->GetCurrentGear();
-    m_bIgnoreClutch = true;
-    veh->ShiftToNeutral();
-    m_bIgnoreClutch = false;
-  } else {
-    m_bIgnoreClutch = true;
-    veh->ShiftToGear(GetTargetGear());
-    m_bIgnoreClutch = false;
-  }
-
-  LOG_DEBUG(
-      fmt::format("Clutch was {}", m_bClutchPressed ? "pressed" : "released"));
-}
-
-void SMGM::SetTargetGear(const Vehicle::GearParams &targetGear) {
-  m_targetGear = targetGear;
-}
 } // namespace smgm
