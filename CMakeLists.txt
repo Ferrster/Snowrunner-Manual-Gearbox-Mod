@@ -27,6 +27,7 @@ ExternalProject_Add_Step(DetoursLib _build
   COMMAND ${PROJECT_SOURCE_DIR}/misc/build_detours.bat ${SMGM_PATH_TO_VCVARS64} ${SOURCE_DIR}
   ALWAYS ON
 )
+
 link_directories(${SOURCE_DIR}/lib.X64)
 include_directories(${SOURCE_DIR}/include)
 
