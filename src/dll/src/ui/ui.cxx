@@ -10,6 +10,10 @@
 
 namespace smgm {
 bool Ui::Init(const InitParams &params) {
+  if (m_initialized) {
+    return true;
+  }
+
   ImGuiContext *ctx = ImGui::CreateContext();
   ImGuiIO &io = ImGui::GetIO();
 
@@ -19,19 +23,29 @@ bool Ui::Init(const InitParams &params) {
 
   m_imguiCtx = ctx;
   m_initParams = params;
+  m_initialized = true;
 
   return true;
 }
 
 bool Ui::Destroy() {
+  if (!m_initialized) {
+    return true;
+  }
+
   ImGui_ImplDX11_Shutdown();
   ImGui_ImplWin32_Shutdown();
   ImGui::DestroyContext(m_imguiCtx);
+  m_initialized = false;
 
   return true;
 }
 
 bool Ui::Draw() {
+  if (!m_initialized) {
+    return false;
+  }
+
   ImGui_ImplDX11_NewFrame();
   ImGui_ImplWin32_NewFrame();
   ImGui::NewFrame();

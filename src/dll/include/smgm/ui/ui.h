@@ -22,6 +22,7 @@ public:
   bool Draw();
 
 private:
+  bool m_initialized = false;
   ImGuiContext *m_imguiCtx = nullptr;
   InitParams m_initParams;
 };
