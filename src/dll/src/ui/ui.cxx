@@ -3,6 +3,11 @@
 #include "backends/imgui_impl_dx11.h"
 #include "backends/imgui_impl_win32.h"
 
+#include "imgui.h"
+#include "smgm/ui/components/imhotkey.h"
+
+#include <vector>
+
 namespace smgm {
 bool Ui::Init(const InitParams &params) {
   ImGuiContext *ctx = ImGui::CreateContext();
@@ -31,6 +36,23 @@ bool Ui::Draw() {
   ImGui_ImplWin32_NewFrame();
   ImGui::NewFrame();
 
+  {
+    static std::vector<ImHotKey::HotKey> hotkeys = {
+        {"Layout", "Reorder nodes in a simpler layout ", 0xFFFF261D},
+        {"Save", "Save the current graph", 0xFFFF1F1D},
+        {"Load", "Load an existing graph file", 0xFFFF181D},
+        {"Play/Stop", "Play or stop the animation from the current graph",
+         0xFFFFFF3F},
+        {"SetKey",
+         "Make a new animation key with the current parameters values at the "
+         "current time ",
+         0xFFFFFF1F}};
+
+    if (ImGui::Button("Edit Hotkeys")) {
+      ImGui::OpenPopup("HotKeys Editor");
+    }
+    ImHotKey::Edit(hotkeys.data(), hotkeys.size(), "HotKeys Editor");
+  }
   ImGui::ShowDemoWindow();
 
   ImGui::Render();
