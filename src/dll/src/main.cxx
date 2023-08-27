@@ -34,10 +34,6 @@
 #define DETOUR_DETACH(Src)                                                     \
   DetourDetach(&(PVOID &)Src, (PVOID)SMGM_HOOK_NAME(Src))
 
-std::atomic_bool g_Shutdown = false;
-smgm::InputReader *g_InputReader = nullptr;
-smgm::Ui g_Ui;
-
 // ===================================================================
 #include "d3d11.h"
 #include "dxgi.h"
@@ -47,74 +43,73 @@ smgm::Ui g_Ui;
 #include "backends/imgui_impl_dx11.h"
 #include "backends/imgui_impl_win32.h"
 
-using FncPresent = HRESULT(__stdcall *)(IDXGISwapChain *pSwapChain,
-                                        UINT SyncInterval, UINT Flags);
+auto *const g_Mod = smgm::SMGM::GetInstance();
 
 extern LRESULT ImGui_ImplWin32_WndProcHandler(HWND hWnd, UINT msg,
                                               WPARAM wParam, LPARAM lParam);
 
-FncPresent oPresent;
-HWND window = NULL;
-WNDPROC oWndProc;
-ID3D11Device *pDevice = NULL;
-ID3D11DeviceContext *pContext = NULL;
-ID3D11RenderTargetView *mainRenderTargetView;
-
 LRESULT __stdcall WndProc(const HWND hWnd, UINT uMsg, WPARAM wParam,
                           LPARAM lParam) {
 
-  if (true && ImGui_ImplWin32_WndProcHandler(hWnd, uMsg, wParam, lParam))
+  if (ImGui_ImplWin32_WndProcHandler(hWnd, uMsg, wParam, lParam))
     return true;
 
-  return CallWindowProc(oWndProc, hWnd, uMsg, wParam, lParam);
+  LOG_DEBUG(fmt::format("hWnd: {} | uMsg: {} | wParam: {} | lParam: {}",
+                        (void *)hWnd, uMsg, wParam, lParam));
+
+  return CallWindowProc(smgm::SMGM::GetInstance()->oWndProc, hWnd, uMsg, wParam,
+                        lParam);
 }
 
-bool init = false;
 HRESULT __stdcall hkPresent(IDXGISwapChain *pSwapChain, UINT SyncInterval,
                             UINT Flags) {
-  if (!init) {
-    if (SUCCEEDED(
-            pSwapChain->GetDevice(__uuidof(ID3D11Device), (void **)&pDevice))) {
-      pDevice->GetImmediateContext(&pContext);
+  if (!g_Mod->isD3D11PresetHookInit) {
+    if (SUCCEEDED(pSwapChain->GetDevice(__uuidof(ID3D11Device),
+                                        (void **)&g_Mod->pDevice))) {
+      g_Mod->pDevice->GetImmediateContext(&g_Mod->pContext);
+
       DXGI_SWAP_CHAIN_DESC sd;
+
       pSwapChain->GetDesc(&sd);
-      window = sd.OutputWindow;
+      g_Mod->window = sd.OutputWindow;
+
       ID3D11Texture2D *pBackBuffer;
+
       pSwapChain->GetBuffer(0, __uuidof(ID3D11Texture2D),
                             (LPVOID *)&pBackBuffer);
-      pDevice->CreateRenderTargetView(pBackBuffer, NULL, &mainRenderTargetView);
+      g_Mod->pDevice->CreateRenderTargetView(pBackBuffer, NULL,
+                                             &g_Mod->mainRenderTargetView);
       pBackBuffer->Release();
-      oWndProc =
-          (WNDPROC)SetWindowLongPtr(window, GWLP_WNDPROC, (LONG_PTR)WndProc);
-
-      g_Ui.Init({window, pDevice, pContext, mainRenderTargetView});
-      init = true;
+      g_Mod->oWndProc = (WNDPROC)SetWindowLongPtr(g_Mod->window, GWLP_WNDPROC,
+                                                  (LONG_PTR)WndProc);
+      g_Mod->ui.Init({g_Mod->window, g_Mod->pDevice, g_Mod->pContext,
+                      g_Mod->mainRenderTargetView});
+      g_Mod->isD3D11PresetHookInit = true;
+    } else {
+      return g_Mod->oPresent(pSwapChain, SyncInterval, Flags);
     }
-
-    else
-      return oPresent(pSwapChain, SyncInterval, Flags);
   }
 
-  if (g_Shutdown) {
+  if (g_Mod->isExiting) {
     kiero::shutdown();
 
     DetourTransactionBegin();
     DetourUpdateThread(GetCurrentThread());
-    DetourDetach(&(PVOID &)oPresent, (PVOID)hkPresent);
+    DetourDetach(&(PVOID &)g_Mod->oPresent, (PVOID)hkPresent);
     DetourTransactionCommit();
 
-    pDevice->Release();
-    pContext->Release();
+    g_Mod->pDevice->Release();
+    g_Mod->pContext->Release();
     pSwapChain->Release();
-    oWndProc =
-        (WNDPROC)SetWindowLongPtr(window, GWLP_WNDPROC, (LONG_PTR)(oWndProc));
-    oPresent(pSwapChain, SyncInterval, Flags);
+    g_Mod->oWndProc = (WNDPROC)SetWindowLongPtr(g_Mod->window, GWLP_WNDPROC,
+                                                (LONG_PTR)(g_Mod->oWndProc));
+    g_Mod->oPresent(pSwapChain, SyncInterval, Flags);
     return 0;
   }
 
-  g_Ui.Draw();
+  g_Mod->ui.Draw();
 
-  return oPresent(pSwapChain, SyncInterval, Flags);
+  return g_Mod->oPresent(pSwapChain, SyncInterval, Flags);
 }
 
 // ===================================================================
@@ -125,17 +120,18 @@ DWORD WINAPI MainThread(LPVOID param) {
     if (kiero::init(kiero::RenderType::D3D11) == kiero::Status::Success) {
       DetourTransactionBegin();
       DetourUpdateThread(GetCurrentThread());
-      oPresent = (FncPresent)kiero::getMethodsTable()[8];
-      DetourAttach(&(PVOID &)oPresent, (PVOID)hkPresent);
+      g_Mod->oPresent = (smgm::FncD3D11Present)kiero::getMethodsTable()[8];
+      DetourAttach(&(PVOID &)g_Mod->oPresent, (PVOID)hkPresent);
       DetourTransactionCommit();
+
       init_hook = true;
     }
   } while (!init_hook);
 
-  g_InputReader->WaitForThread();
+  g_Mod->inputReader.WaitForThread();
   LOG_DEBUG("Exiting...");
 
-  g_Ui.Destroy();
+  g_Mod->ui.Destroy();
 
   Sleep(1000);
   FreeLibraryAndExitThread((HMODULE)param, 0);
@@ -172,13 +168,13 @@ void Init(HINSTANCE hinst, DWORD dwReason, LPVOID reserved) {
 
   DetourTransactionCommit();
 
-  g_InputReader = new smgm::InputReader;
-  g_InputReader->BindKeyboard(VK_F1, [] {
-    g_Shutdown = true;
-    g_InputReader->Stop();
+  g_Mod->inputReader.BindKeyboard(VK_F1, [] {
+    g_Mod->isExiting = true;
+    g_Mod->inputReader.Stop();
   });
-  g_InputReader->ReadInputConfig(std::filesystem::current_path() / "smgm.ini");
-  g_InputReader->Start();
+  g_Mod->inputReader.ReadInputConfig(std::filesystem::current_path() /
+                                     "smgm.ini");
+  g_Mod->inputReader.Start();
 
   if (smgm::Vehicle *veh = smgm::SMGM::GetCurrentVehicle()) {
     veh->truckAction->isAutoEnabled = false;
