@@ -21,7 +21,6 @@
 #include <winerror.h>
 #include <winuser.h>
 
-#include "imgui.h"
 #include "smgm/game/data_types/vehicle.h"
 #include "smgm/smgm.h"
 #include "smgm/ui/ui.h"
@@ -43,7 +42,7 @@
 #include "backends/imgui_impl_dx11.h"
 #include "backends/imgui_impl_win32.h"
 
-auto *const g_Mod = smgm::SMGM::GetInstance();
+smgm::SMGM *g_Mod = nullptr;
 
 extern LRESULT ImGui_ImplWin32_WndProcHandler(HWND hWnd, UINT msg,
                                               WPARAM wParam, LPARAM lParam);
@@ -150,11 +149,12 @@ void Init(HINSTANCE hinst, DWORD dwReason, LPVOID reserved) {
   freopen("CONOUT$", "w", stdout);
   freopen("CONOUT$", "w", stderr);
 #endif
-
   spdlog::set_level(spdlog::level::debug);
   spdlog::set_pattern("[%H:%M:%S %z] [%n] [%^---%L---%$] [thread %t] %v");
 
-  LOG_DEBUG("SnowRunner Manual Gearbox v0.1");
+  LOG_INFO("SnowRunner Manual Gearbox v0.1");
+
+  g_Mod = smgm::SMGM::GetInstance();
 
   DetourRestoreAfterWith();
   DetourTransactionBegin();
