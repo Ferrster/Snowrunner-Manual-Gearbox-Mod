@@ -14,7 +14,8 @@ std::string FormatDataTable(const std::string &name,
       [&] {
         static constexpr const char *format = "\t{:<32}: {}\n";
 
-        if constexpr (std::is_pointer_v<decltype(field.second)>) {
+        if constexpr (std::is_pointer_v<decltype(field.second)> &&
+                      !std::is_same_v<decltype(field.second), const char *>) {
           fmt::format_to(std::back_inserter(output), format, field.first,
                          FormatPointer(field.second));
         } else {
