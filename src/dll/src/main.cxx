@@ -24,6 +24,7 @@
 #include "smgm/game/data_types/vehicle.h"
 #include "smgm/smgm.h"
 #include "smgm/ui/ui.h"
+#include "smgm/utils/dinput_hook.h"
 #include "smgm/utils/format_helpers.h"
 #include "smgm/utils/input_reader.h"
 #include "smgm/utils/logging.h"
@@ -166,11 +167,20 @@ void Init(HINSTANCE hinst, DWORD dwReason, LPVOID reserved) {
   DETOUR_ATTACH(ShiftToAutoGear);
   DETOUR_ATTACH(SetCurrentVehicle);
 
+  smgm::InstallDInputHooks(hinst);
+
   DetourTransactionCommit();
 
   g_Mod->inputReader.BindKeyboard(VK_F1, [] {
     g_Mod->isExiting = true;
     g_Mod->inputReader.Stop();
+  });
+  g_Mod->inputReader.BindKeyboard(VK_F2, [] {
+    using namespace smgm;
+    if (g_DInput->EnumDevices(DI8DEVCLASS_ALL, CbDInputEnumDevices, NULL,
+                              DIEDFL_ALLDEVICES) != DI_OK) {
+      LOG_ERROR("EnumDevices failed!");
+    }
   });
   g_Mod->inputReader.ReadInputConfig(std::filesystem::current_path() /
                                      "smgm.ini");
@@ -200,6 +210,8 @@ void Teardown(HINSTANCE hinst, DWORD dwReason, LPVOID reserved) {
   DETOUR_DETACH(GetMaxGear);
   DETOUR_DETACH(ShiftToAutoGear);
   DETOUR_DETACH(SetCurrentVehicle);
+
+  smgm::RemoveDInputHooks(hinst);
 
   DetourTransactionCommit();
 

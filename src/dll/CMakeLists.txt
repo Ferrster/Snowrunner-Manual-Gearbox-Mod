@@ -68,6 +68,8 @@ target_link_libraries(${TARGET_NAME}
   PUBLIC spdlog::spdlog
   PUBLIC Boost::Boost
   PUBLIC xinput
+  PUBLIC dinput8
+  PUBLIC dxguid
   PRIVATE $<TARGET_OBJECTS:ImGui>
 )
 add_dependencies(${TARGET_NAME} DetoursLib)
