@@ -216,7 +216,10 @@ void Teardown(HINSTANCE hinst, DWORD dwReason, LPVOID reserved) {
   DetourTransactionCommit();
 
 #ifndef SMGM_NO_CONSOLE
+  HWND hConsole = GetConsoleWindow();
+
   FreeConsole();
+  PostMessage(hConsole, WM_CLOSE, 0, 0);
 #endif
 }
 
