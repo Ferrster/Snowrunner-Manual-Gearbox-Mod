@@ -1,9 +1,7 @@
 #pragma once
 
-#include "Windows.h"
-#include "Xinput.h"
-
 #include <atomic>
+#include <boost/describe.hpp>
 #include <boost/property_tree/ptree_fwd.hpp>
 #include <filesystem>
 #include <functional>
@@ -11,7 +9,7 @@
 #include <thread>
 #include <unordered_map>
 
-#include <boost/describe.hpp>
+#include "Windows.h"
 
 namespace smgm {
 
@@ -25,7 +23,7 @@ BOOST_DEFINE_ENUM(InputAction, SHIFT_1_GEAR, SHIFT_2_GEAR, SHIFT_3_GEAR,
                   SHIFT_REVERSE_GEAR);
 
 class InputReader {
-public:
+ public:
   using FncKeyPressCb = std::function<void()>;
 
   struct KeyInfo {
@@ -34,18 +32,18 @@ public:
     bool bPressed = false;
   };
 
-private:
+ private:
   std::atomic_bool m_bStop = true;
   std::thread m_readerThread;
   std::shared_mutex m_mtx;
   std::unordered_map<WORD, KeyInfo> m_keysKeyboard, m_keysJoystick;
 
-private:
+ private:
   void ProcessKeys();
 
   void WriteDefaultConfig(const std::filesystem::path &configPath);
 
-public:
+ public:
   InputReader();
   ~InputReader();
 
@@ -63,4 +61,4 @@ public:
 
   bool ReadInputConfig(const std::filesystem::path &configPath);
 };
-} // namespace smgm
+}  // namespace smgm

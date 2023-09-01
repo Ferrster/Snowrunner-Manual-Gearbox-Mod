@@ -1,21 +1,22 @@
 #include "smgm/utils/input_reader.h"
-#include "smgm/smgm.h"
-#include "smgm/utils/format_helpers.h"
-#include "smgm/utils/logging.h"
-#include <Xinput.h>
-#include <boost/describe/enum_to_string.hpp>
-#include <boost/property_tree/ptree_fwd.hpp>
-#include <exception>
-#include <filesystem>
+
 #include <fmt/core.h>
-#include <mutex>
-#include <utility>
 #include <winerror.h>
 #include <winuser.h>
 
+#include <boost/describe/enum_to_string.hpp>
 #include <boost/mp11.hpp>
 #include <boost/property_tree/ini_parser.hpp>
 #include <boost/property_tree/ptree.hpp>
+#include <boost/property_tree/ptree_fwd.hpp>
+#include <exception>
+#include <filesystem>
+#include <mutex>
+#include <utility>
+
+#include "smgm/smgm.h"
+#include "smgm/utils/format_helpers.h"
+#include "smgm/utils/logging.h"
 
 namespace smgm {
 
@@ -28,11 +29,6 @@ const std::unordered_map<InputDeviceType, std::unordered_map<InputAction, WORD>>
                 {
                     {SHIFT_PREV_AUTO_GEAR, VK_LCONTROL},
                     {SHIFT_NEXT_AUTO_GEAR, VK_LMENU},
-                }},
-               {JOYSTICK,
-                {
-                    {SHIFT_PREV_AUTO_GEAR, VK_PAD_DPAD_LEFT},
-                    {SHIFT_NEXT_AUTO_GEAR, VK_PAD_DPAD_RIGHT},
                 }}};
 
 InputReader::InputReader() { LOG_DEBUG("Input reader created"); }
@@ -104,28 +100,28 @@ void InputReader::ProcessKeys() {
       }
     }
 
-    // Handle joystick input
-    if (XINPUT_KEYSTROKE ks;
-        XInputGetKeystroke(XUSER_INDEX_ANY, 0, &ks) == ERROR_SUCCESS) {
-      if (m_keysJoystick.count(ks.VirtualKey) == 0) {
-        continue;
-      }
-      KeyInfo &info = m_keysJoystick[ks.VirtualKey];
+    // // Handle joystick input
+    // if (XINPUT_KEYSTROKE ks;
+    //     XInputGetKeystroke(XUSER_INDEX_ANY, 0, &ks) == ERROR_SUCCESS) {
+    //   if (m_keysJoystick.count(ks.VirtualKey) == 0) {
+    //     continue;
+    //   }
+    //   KeyInfo &info = m_keysJoystick[ks.VirtualKey];
 
-      if (ks.Flags & XINPUT_KEYSTROKE_KEYDOWN) {
-        info.bPressed = true;
+    //   if (ks.Flags & XINPUT_KEYSTROKE_KEYDOWN) {
+    //     info.bPressed = true;
 
-        if (info.onPressed) {
-          info.onPressed();
-        }
-      } else if (ks.Flags & XINPUT_KEYSTROKE_KEYUP) {
-        info.bPressed = false;
+    //     if (info.onPressed) {
+    //       info.onPressed();
+    //     }
+    //   } else if (ks.Flags & XINPUT_KEYSTROKE_KEYUP) {
+    //     info.bPressed = false;
 
-        if (info.onReleased) {
-          info.onReleased();
-        }
-      }
-    }
+    //     if (info.onReleased) {
+    //       info.onReleased();
+    //     }
+    //   }
+    // }
   }
 
   LOG_DEBUG("Finished processing");
@@ -158,73 +154,73 @@ bool InputReader::ReadInputConfig(const std::filesystem::path &configPath) {
         const auto actionOnPress = [&]() -> FncKeyPressCb {
           static const auto ShiftGearFnc = [](std::int32_t gear) {
             return [gear] {
-              if (auto *veh = SMGM::GetCurrentVehicle()) {
+              if (auto *veh = combine::TruckControl::GetCurrentVehicle()) {
                 veh->ShiftToGear(gear);
               }
             };
           };
 
           switch (D.value) {
-          case SHIFT_1_GEAR:
-            return ShiftGearFnc(1);
-          case SHIFT_2_GEAR:
-            return ShiftGearFnc(2);
-          case SHIFT_3_GEAR:
-            return ShiftGearFnc(3);
-          case SHIFT_4_GEAR:
-            return ShiftGearFnc(4);
-          case SHIFT_5_GEAR:
-            return ShiftGearFnc(5);
-          case SHIFT_6_GEAR:
-            return ShiftGearFnc(6);
-          case SHIFT_7_GEAR:
-            return ShiftGearFnc(7);
-          case SHIFT_8_GEAR:
-            return ShiftGearFnc(8);
-          case SHIFT_HIGH_GEAR:
-            return [] {
-              if (auto *veh = SMGM::GetCurrentVehicle()) {
-                veh->ShiftToHighGear();
-              }
-            };
-          case SHIFT_LOW_GEAR:
-            return [] {
-              if (auto *veh = SMGM::GetCurrentVehicle()) {
-                veh->ShiftToLowGear();
-              }
-            };
-          case SHIFT_LOW_PLUS_GEAR:
-            return [] {
-              if (auto *veh = SMGM::GetCurrentVehicle()) {
-                veh->ShiftToLowPlusGear();
-              }
-            };
-          case SHIFT_LOW_MINUS_GEAR:
-            return [] {
-              if (auto *veh = SMGM::GetCurrentVehicle()) {
-                veh->ShiftToLowMinusGear();
-              }
-            };
-          case SHIFT_NEUTRAL:
-            return ShiftGearFnc(0);
-          case SHIFT_PREV_AUTO_GEAR:
-            return [] {
-              if (auto *veh = SMGM::GetCurrentVehicle()) {
-                veh->ShiftToPrevGear();
-              }
-            };
-          case SHIFT_NEXT_AUTO_GEAR:
-            return [] {
-              if (auto *veh = SMGM::GetCurrentVehicle()) {
-                veh->ShiftToNextGear();
-              }
-            };
-          case SHIFT_REVERSE_GEAR:
-            return [] {
-              if (auto *veh = SMGM::GetCurrentVehicle()) {
-                veh->ShiftToReverseGear();
-              }
-            };
+            case SHIFT_1_GEAR:
+              return ShiftGearFnc(1);
+            case SHIFT_2_GEAR:
+              return ShiftGearFnc(2);
+            case SHIFT_3_GEAR:
+              return ShiftGearFnc(3);
+            case SHIFT_4_GEAR:
+              return ShiftGearFnc(4);
+            case SHIFT_5_GEAR:
+              return ShiftGearFnc(5);
+            case SHIFT_6_GEAR:
+              return ShiftGearFnc(6);
+            case SHIFT_7_GEAR:
+              return ShiftGearFnc(7);
+            case SHIFT_8_GEAR:
+              return ShiftGearFnc(8);
+            case SHIFT_HIGH_GEAR:
+              return [] {
+                if (auto *veh = combine::TruckControl::GetCurrentVehicle()) {
+                  veh->ShiftToHighGear();
+                }
+              };
+            case SHIFT_LOW_GEAR:
+              return [] {
+                if (auto *veh = combine::TruckControl::GetCurrentVehicle()) {
+                  veh->ShiftToLowGear();
+                }
+              };
+            case SHIFT_LOW_PLUS_GEAR:
+              return [] {
+                if (auto *veh = combine::TruckControl::GetCurrentVehicle()) {
+                  veh->ShiftToLowPlusGear();
+                }
+              };
+            case SHIFT_LOW_MINUS_GEAR:
+              return [] {
+                if (auto *veh = combine::TruckControl::GetCurrentVehicle()) {
+                  veh->ShiftToLowMinusGear();
+                }
+              };
+            case SHIFT_NEUTRAL:
+              return ShiftGearFnc(0);
+            case SHIFT_PREV_AUTO_GEAR:
+              return [] {
+                if (auto *veh = combine::TruckControl::GetCurrentVehicle()) {
+                  veh->ShiftToPrevGear();
+                }
+              };
+            case SHIFT_NEXT_AUTO_GEAR:
+              return [] {
+                if (auto *veh = combine::TruckControl::GetCurrentVehicle()) {
+                  veh->ShiftToNextGear();
+                }
+              };
+            case SHIFT_REVERSE_GEAR:
+              return [] {
+                if (auto *veh = combine::TruckControl::GetCurrentVehicle()) {
+                  veh->ShiftToReverseGear();
+                }
+              };
           }
 
           return [] {};
@@ -236,8 +232,8 @@ bool InputReader::ReadInputConfig(const std::filesystem::path &configPath) {
         const std::string iniKey = fmt::format("{}.{}", key, D.name);
         const auto v = pt.get_optional<std::string>(iniKey);
 
-        LOG_DEBUG(fmt::format("{}: {}", iniKey,
-                              v.has_value() ? v.value() : "<empty>"));
+        // LOG_DEBUG(fmt::format("{}: {}", iniKey,
+        //                       v.has_value() ? v.value() : "<empty>"));
 
         if (v.has_value() && !v.value().empty()) {
           result.insert(
@@ -318,4 +314,4 @@ void InputReader::WriteDefaultConfig(const std::filesystem::path &configPath) {
   }
 }
 
-} // namespace smgm
+}  // namespace smgm

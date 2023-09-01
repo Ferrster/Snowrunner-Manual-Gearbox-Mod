@@ -32,6 +32,7 @@ inline std::string FormatPointer(void *ptr) {
   return fmt::format("{:0>16x}", (std::uint64_t)ptr);
 }
 
-template <typename T> inline std::string FormatPointer(T *ptr) {
+template <typename T>
+inline std::string FormatPointer(T *ptr) {
   return FormatPointer((void *)ptr);
 }

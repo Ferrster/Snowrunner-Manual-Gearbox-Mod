@@ -1,30 +1,44 @@
 #pragma once
 
-#include "Windows.h"
-
 #include <d3d11.h>
 
+#include <atomic>
+
+#include "Windows.h"
 #include "imgui.h"
+#include "smgm/utils/dinput_tools.h"
 
 namespace smgm {
 
 class Ui {
-public:
+ public:
   struct InitParams {
     HWND window = NULL;
     ID3D11Device *device = NULL;
-    ID3D11DeviceContext *deviceCtx = NULL;
-    ID3D11RenderTargetView *renderTargetView = NULL;
+    ID3D11DeviceContext *ctx = NULL;
+    ID3D11RenderTargetView *rtv = NULL;
+  };
+  struct ListEntryDInputDevice {
+    std::string name;
+    std::string product_name;
+    std::string guid;
+    DWORD type = 0;
   };
 
   bool Init(const InitParams &params);
   bool Destroy();
   bool Draw();
 
-private:
-  bool m_initialized = false;
-  ImGuiContext *m_imguiCtx = nullptr;
-  InitParams m_initParams;
+  void AddDInputDevice(const ListEntryDInputDevice &info);
+  void RemoveDInputDevice(LPCDIDEVICEINSTANCE device);
+
+  bool is_open = true;
+
+ private:
+  std::vector<ListEntryDInputDevice> dinput_devs_;
+  std::atomic_bool initialized_ = false;
+  ImGuiContext *imgui_ctx_ = nullptr;
+  InitParams init_params_;
 };
 
-} // namespace smgm
+}  // namespace smgm

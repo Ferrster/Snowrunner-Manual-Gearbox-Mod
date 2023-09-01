@@ -44,6 +44,10 @@ target_compile_definitions(${TARGET_NAME}
   PUBLIC BOOST_USE_WINAPI_VERSION=1536 # <= Win Vista
   PUBLIC NOMINMAX
   PRIVATE _CRT_SECURE_NO_WARNINGS
+  PRIVATE _SILENCE_CXX17_CODECVT_HEADER_DEPRECATION_WARNING
+  PUBLIC DIRECTINPUT_VERSION=0x0800
+
+  PUBLIC SMGM_TITLE="SMGM"
 )
 
 if(SMGM_NO_CONSOLE)
@@ -65,9 +69,7 @@ target_include_directories(${TARGET_NAME}
 target_link_libraries(${TARGET_NAME}
   PUBLIC detours
   PUBLIC fmt::fmt
-  PUBLIC spdlog::spdlog
   PUBLIC Boost::Boost
-  PUBLIC xinput
   PUBLIC dinput8
   PUBLIC dxguid
   PRIVATE $<TARGET_OBJECTS:ImGui>

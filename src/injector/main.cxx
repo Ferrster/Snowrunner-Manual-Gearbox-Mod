@@ -1,20 +1,19 @@
+// clang-format off
 #include "Windows.h"
+// clang-format on
 
-#include "TlHelp32.h"
 #include <corecrt_wstring.h>
-#include <handleapi.h>
-
 #include <fmt/format.h>
+#include <handleapi.h>
 #include <processthreadsapi.h>
-#include <spdlog/spdlog.h>
 #include <string.h>
 #include <winnt.h>
 
-int main(int argc, char **argv) {
-  spdlog::set_level(spdlog::level::debug);
-  spdlog::set_pattern("[%H:%M:%S %z] [%n] [%^---%L---%$] [thread %t] %v");
-  spdlog::info("SnowRunner Manual Gearbox Mod Loader");
+#include "TlHelp32.h"
 
+#define SMGM_LOADER_TITLE "SMGM Loader"
+
+int main(int argc, char **argv) {
   HANDLE hProcessSnap = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0);
   if (hProcessSnap == INVALID_HANDLE_VALUE) {
     return -1;
@@ -42,16 +41,18 @@ int main(int argc, char **argv) {
   CloseHandle(hProcessSnap);
 
   if (pid == 0) {
-    spdlog::critical("Failed to find SnowRunner process!");
+    MessageBox(nullptr, "Failed to find SnowRunner process!", SMGM_LOADER_TITLE,
+               MB_OK | MB_ICONERROR);
 
     return -1;
   }
 
-  HANDLE gameHandle = OpenProcess(PROCESS_CREATE_THREAD | PROCESS_VM_OPERATION |
-                                      PROCESS_VM_WRITE,
-                                  false, pid);
+  HANDLE gameHandle = OpenProcess(
+      PROCESS_CREATE_THREAD | PROCESS_VM_OPERATION | PROCESS_VM_WRITE, false,
+      pid);
   if (!gameHandle) {
-    spdlog::critical("Failed to open SnowRunner process!");
+    MessageBox(nullptr, "Failed to open SnowRunner process!", SMGM_LOADER_TITLE,
+               MB_OK | MB_ICONERROR);
 
     return -1;
   }
@@ -69,6 +70,8 @@ int main(int argc, char **argv) {
   HANDLE remoteThreadHandle = CreateRemoteThread(
       gameHandle, NULL, 0, loadLibraryFunction, bufDllName, 0, NULL);
   if (!remoteThreadHandle) {
-    spdlog::critical("Failed to create remote thread in the target process!");
+    MessageBox(nullptr,
+               "Failed to create loading thread in the target process!",
+               SMGM_LOADER_TITLE, MB_OK | MB_ICONERROR);
   }
 }
