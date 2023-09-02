@@ -10,6 +10,7 @@
 #include "boost/uuid/uuid.hpp"
 #include "detours.h"
 #include "smgm/game/data_types/combine/truck_control.h"
+#include "smgm/input/dinput_reader.h"
 #include "smgm/utils/d3d11_tools.h"
 #include "smgm/utils/detours_helpers.h"
 #include "smgm/utils/dinput_tools.h"
@@ -61,6 +62,8 @@ namespace smgm {
 std::atomic_bool is_exiting = false;
 smgm::Ui ui;
 InputReader input_reader;
+input::DirectInputReader dinput_reader;
+
 HWND game_window = nullptr;
 
 DWORD WINAPI MainThread(LPVOID param) {
@@ -100,6 +103,7 @@ bool Init(HINSTANCE hinst) {
 
   LOG_INFO("SnowRunner Manual Gearbox v0.1");
 
+  using namespace std::placeholders;
   d3d11::sig_hook_initialized.connect([](const d3d11::HookParams &params) {
     game_window = params.window;
     ui.Init({params.window, params.device, params.ctx, params.rtv});
@@ -115,6 +119,8 @@ bool Init(HINSTANCE hinst) {
       // skipOrigWndProc = true;
     }
   });
+  dinput::sig_device_state.connect(
+      std::bind(&input::DirectInputReader::Process, &dinput_reader, _1, _2));
 
   DetourRestoreAfterWith();
   DetourTransactionBegin();

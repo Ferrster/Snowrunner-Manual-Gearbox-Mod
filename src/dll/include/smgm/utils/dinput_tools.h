@@ -1,6 +1,7 @@
 #pragma once
 
 #include <any>
+#include <array>
 #include <optional>
 
 #include "Windows.h"
@@ -31,6 +32,8 @@ struct Device {
 };
 
 using DeviceMap = std::unordered_map<std::string, Device>;
+using KeyboardState = std::array<BYTE, 256>;
+using JoystickState = DIJOYSTATE2;
 
 extern IDirectInput8 *dinput_inst;
 extern boost::signals2::signal<void(const Device &)> sig_device_created;
