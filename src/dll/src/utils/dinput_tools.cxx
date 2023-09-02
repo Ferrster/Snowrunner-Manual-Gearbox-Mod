@@ -2,6 +2,7 @@
 
 #include <dinput.h>
 
+#include <array>
 #include <shared_mutex>
 #include <unordered_map>
 #include <utility>
@@ -22,13 +23,15 @@ std::unordered_map<std::string, Device> created_devices;
 
 std::shared_mutex mtx_devs;
 
-template <typename T, std::size_t size = sizeof(T)>
-HRESULT ProcessDeviceState(const Device &dev_info, T *out_state) {
+template <typename T>
+HRESULT ProcessDeviceState(const Device &dev_info, T *out_state,
+                           std::size_t size) {
+  if (!out_state) return -1;
+
   HRESULT res;
 
-  if (SUCCEEDED(res = dev_info.instance->GetDeviceState(size, out_state))) {
-    sig_device_state(dev_info, std::any{*out_state});
-  } else {
+  if (FAILED(res = dev_info.instance->GetDeviceState(static_cast<DWORD>(size),
+                                                     out_state))) {
     LOG_WARNING(
         fmt::format("[{}] GetDeviceState failed ({})", dev_info.name, res));
   }
@@ -237,11 +240,16 @@ void PollDeviceStates() {
       continue;
     }
 
+    std::any state;
+
     switch (dev_info.type & 0xFF) {
       case DI8DEVTYPE_KEYBOARD: {
-        std::vector<BYTE> kb_state(256);
+        std::array<BYTE, 256> kb_state;
 
-        ProcessDeviceState<BYTE, 256>(dev_info, (BYTE *)kb_state.data());
+        if (SUCCEEDED(hr = ProcessDeviceState(dev_info, kb_state.data(),
+                                              kb_state.size())))
+          state = kb_state;
+
         break;
       }
       case DI8DEVTYPE_DRIVING:
@@ -250,15 +258,16 @@ void PollDeviceStates() {
       case DI8DEVTYPE_SUPPLEMENTAL: {
         DIJOYSTATE2 js;
 
-        ProcessDeviceState(dev_info, &js);
+        if (SUCCEEDED(hr = ProcessDeviceState(dev_info, &js, sizeof(js))))
+          state = js;
+
         break;
       }
     }
-    // DIJOYSTATE2 js;
 
-    // if (FAILED(hr = dev->GetDeviceState(sizeof(DIJOYSTATE2), &js))) {
-    //   continue;
-    // }
+    if (SUCCEEDED(hr)) {
+      sig_device_state(dev_info, state);
+    }
   }
 }
 
