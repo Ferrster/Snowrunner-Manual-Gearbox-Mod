@@ -18,7 +18,8 @@ namespace smgm::dinput {
 IDirectInput8 *dinput_inst = nullptr;
 boost::signals2::signal<void(const Device &)> sig_device_created;
 boost::signals2::signal<void(const Device &)> sig_device_released;
-boost::signals2::signal<void(const Device &, std::any)> sig_device_state;
+boost::signals2::signal<void(const Device &, const DeviceState &)>
+    sig_device_state;
 std::unordered_map<std::string, Device> created_devices;
 
 std::shared_mutex mtx_devs;
@@ -240,7 +241,7 @@ void PollDeviceStates() {
       continue;
     }
 
-    std::any state;
+    DeviceState state;
 
     switch (dev_info.type & 0xFF) {
       case DI8DEVTYPE_KEYBOARD: {

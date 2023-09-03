@@ -1,8 +1,9 @@
 #pragma once
 
-#include <any>
 #include <array>
 #include <optional>
+#include <type_traits>
+#include <variant>
 
 #include "Windows.h"
 #include "boost/signals2.hpp"
@@ -10,8 +11,11 @@
 #include "smgm/utils/format_helpers.h"
 #include "smgm/utils/guid.h"
 #include "smgm/utils/logging.h"
+#include "smgm/utils/type_traits.h"
 
 namespace smgm::dinput {
+
+enum class KeyState { kReleased, kPressed };
 
 struct Device {
   Device() = default;
@@ -34,11 +38,13 @@ struct Device {
 using DeviceMap = std::unordered_map<std::string, Device>;
 using KeyboardState = std::array<BYTE, 256>;
 using JoystickState = DIJOYSTATE2;
+using DeviceState = std::variant<KeyboardState, JoystickState>;
 
 extern IDirectInput8 *dinput_inst;
 extern boost::signals2::signal<void(const Device &)> sig_device_created;
 extern boost::signals2::signal<void(const Device &)> sig_device_released;
-extern boost::signals2::signal<void(const Device &, std::any)> sig_device_state;
+extern boost::signals2::signal<void(const Device &, const DeviceState &)>
+    sig_device_state;
 
 bool Init(HINSTANCE hinst);
 
@@ -55,5 +61,38 @@ Device GetDevice(const std::string &guid);
 const DeviceMap &GetDeviceMap();
 
 void PollDeviceStates();
+
+inline KeyState GetKeyState(const dinput::DeviceState &state, std::size_t key) {
+  std::uint8_t key_state = std::visit(
+      [key](auto &&arg) -> std::uint8_t {
+        using T = std::decay_t<decltype(arg)>;
+        if constexpr (std::is_same_v<T, KeyboardState>) {
+          return arg[key];
+        } else if constexpr (std::is_same_v<T, JoystickState>) {
+          return arg.rgbButtons[key];
+        } else {
+          static_assert(smgm::always_false_v<T>,
+                        "GetKeyState: invalid device state in std::visit");
+        }
+      },
+      state);
+  return key_state > 0 ? KeyState::kPressed : KeyState::kReleased;
+}
+
+inline constexpr std::size_t GetMaxKeys(const dinput::DeviceState &state) {
+  return std::visit(
+      [](auto &&arg) -> std::size_t {
+        using T = std::decay_t<decltype(arg)>;
+        if constexpr (std::is_same_v<T, KeyboardState>) {
+          return arg.size();
+        } else if constexpr (std::is_same_v<T, JoystickState>) {
+          return sizeof(arg.rgbButtons);
+        } else {
+          static_assert(smgm::always_false_v<T>,
+                        "GetMaxKeys: invalid device state in std::visit");
+        }
+      },
+      state);
+}
 
 }  // namespace smgm::dinput
