@@ -35,8 +35,9 @@ struct Device {
   DWORD type;
 };
 
+using Key = std::uint8_t;
 using DeviceMap = std::unordered_map<std::string, Device>;
-using KeyboardState = std::array<BYTE, 256>;
+using KeyboardState = std::array<Key, 256>;
 using JoystickState = DIJOYSTATE2;
 using DeviceState = std::variant<KeyboardState, JoystickState>;
 
@@ -62,9 +63,9 @@ const DeviceMap &GetDeviceMap();
 
 void PollDeviceStates();
 
-inline KeyState GetKeyState(const dinput::DeviceState &state, std::size_t key) {
-  std::uint8_t key_state = std::visit(
-      [key](auto &&arg) -> std::uint8_t {
+inline KeyState GetKeyState(const dinput::DeviceState &state, Key key) {
+  Key key_state = std::visit(
+      [key](auto &&arg) -> dinput::Key {
         using T = std::decay_t<decltype(arg)>;
         if constexpr (std::is_same_v<T, KeyboardState>) {
           return arg[key];

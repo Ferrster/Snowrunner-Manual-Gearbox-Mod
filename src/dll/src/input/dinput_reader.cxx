@@ -31,12 +31,14 @@ void DirectInputReader::ProcessKeys(const dinput::Device& dev_info,
                                               : nullptr;
   for (std::size_t i = 0; i < dinput::GetMaxKeys(state); ++i) {
     const dinput::KeyState last_key_state =
-        last_state ? dinput::GetKeyState(*last_state, i)
-                   : dinput::KeyState::kReleased;
-    const dinput::KeyState cur_key_state = dinput::GetKeyState(state, i);
+        last_state
+            ? dinput::GetKeyState(*last_state, static_cast<dinput::Key>(i))
+            : dinput::KeyState::kReleased;
+    const dinput::KeyState cur_key_state =
+        dinput::GetKeyState(state, static_cast<dinput::Key>(i));
 
     if (cur_key_state != last_key_state) {
-      OnKeyStateChanged(dev_info, state, static_cast<std::uint8_t>(i),
+      OnKeyStateChanged(dev_info, state, static_cast<dinput::Key>(i),
                         cur_key_state);
     }
   }
@@ -51,7 +53,7 @@ bool DirectInputReader::ProcessJoystick(const dinput::Device& dev_info,
 
 void DirectInputReader::OnKeyStateChanged(
     const dinput::Device& dev_info, const dinput::DeviceState& var_dev_state,
-    std::uint8_t key, dinput::KeyState key_state) {
+    dinput::Key key, dinput::KeyState key_state) {
   LOG_DEBUG(fmt::format(
       "[ {} | {}] Key {} {}", dev_info.name, dev_info.guid, key,
       key_state == dinput::KeyState::kPressed ? "pressed" : "released"));
