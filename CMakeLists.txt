@@ -25,7 +25,10 @@ ExternalProject_Add(DetoursLib
 ExternalProject_Get_Property(DetoursLib SOURCE_DIR)
 ExternalProject_Add_Step(DetoursLib _build
   COMMAND ${PROJECT_SOURCE_DIR}/misc/build_detours.bat ${SMGM_PATH_TO_VCVARS64} ${SOURCE_DIR}
-  ALWAYS ON
+  DEPENDEES download
+  BYPRODUCTS
+  ${SOURCE_DIR}/lib.X64/detours.lib
+  ${SOURCE_DIR}/lib.X64/syelog.lib
 )
 
 link_directories(${SOURCE_DIR}/lib.X64)
