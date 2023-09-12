@@ -98,21 +98,22 @@ void InputReader::ProcessKeys() {
     }
 
     // Handle joystick input
-    if (XINPUT_KEYSTROKE ks;
-        XInputGetKeystroke(XUSER_INDEX_ANY, 0, &ks) == ERROR_SUCCESS) {
-      if (m_keysJoystick.count(ks.VirtualKey) == 0) {
-        continue;
-      }
-      KeyInfo &info = m_keysJoystick[ks.VirtualKey];
-
-      if (ks.Flags & XINPUT_KEYSTROKE_KEYDOWN) {
-        info.bPressed = true;
-
-        if (info.onPressed) {
-          info.onPressed();
+    for (int i = 0; i < XUSER_MAX_COUNT; ++i) {
+      if (XINPUT_KEYSTROKE ks; XInputGetKeystroke(i, 0, &ks) == ERROR_SUCCESS) {
+        if (m_keysJoystick.count(ks.VirtualKey) == 0) {
+          continue;
         }
-      } else if (ks.Flags & XINPUT_KEYSTROKE_KEYUP) {
-        info.bPressed = false;
+        KeyInfo &info = m_keysJoystick[ks.VirtualKey];
+
+        if (ks.Flags & XINPUT_KEYSTROKE_KEYDOWN) {
+          info.bPressed = true;
+
+          if (info.onPressed) {
+            info.onPressed();
+          }
+        } else if (ks.Flags & XINPUT_KEYSTROKE_KEYUP) {
+          info.bPressed = false;
+        }
       }
     }
   }
