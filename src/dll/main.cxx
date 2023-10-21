@@ -28,7 +28,8 @@
 #include "utils/logging.h"
 
 #define DETOUR_ATTACH(Src)                                                     \
-  DetourAttach(&(PVOID &)Src, (PVOID)SMGM_HOOK_NAME(Src))
+  if (DetourAttach(&(PVOID &)Src, (PVOID)SMGM_HOOK_NAME(Src)) != NO_ERROR)     \
+  LOG_DEBUG("Failed to hook function " #Src)
 #define DETOUR_DETACH(Src)                                                     \
   DetourDetach(&(PVOID &)Src, (PVOID)SMGM_HOOK_NAME(Src))
 
@@ -58,7 +59,7 @@ void Init(HINSTANCE hinst, DWORD dwReason, LPVOID reserved) {
   spdlog::set_level(spdlog::level::debug);
   spdlog::set_pattern("[%H:%M:%S %z] [%n] [%^---%L---%$] [thread %t] %v");
 
-  LOG_DEBUG("SnowRunner Manual Gearbox v0.1.3");
+  LOG_DEBUG("SnowRunner Manual Gearbox v0.1.4");
 
   DetourRestoreAfterWith();
   DetourTransactionBegin();
