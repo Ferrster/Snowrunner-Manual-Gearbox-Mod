@@ -59,13 +59,13 @@ void Init(HINSTANCE hinst, DWORD dwReason, LPVOID reserved) {
   spdlog::set_level(spdlog::level::debug);
   spdlog::set_pattern("[%H:%M:%S %z] [%n] [%^---%L---%$] [thread %t] %v");
 
-  LOG_DEBUG("SnowRunner Manual Gearbox v0.1.8");
+  LOG_DEBUG("SnowRunner Manual Gearbox v0.1.9");
 
   DetourRestoreAfterWith();
   DetourTransactionBegin();
   DetourUpdateThread(GetCurrentThread());
 
-  DETOUR_ATTACH(SwitchAWD);
+  // DETOUR_ATTACH(SwitchAWD);
   DETOUR_ATTACH(ShiftGear);
   DETOUR_ATTACH(GetMaxGear);
   DETOUR_ATTACH(ShiftToAutoGear);
@@ -97,7 +97,7 @@ void Teardown(HINSTANCE hinst, DWORD dwReason, LPVOID reserved) {
   DetourTransactionBegin();
   DetourUpdateThread(GetCurrentThread());
 
-  DETOUR_DETACH(SwitchAWD);
+  // DETOUR_DETACH(SwitchAWD);
   DETOUR_DETACH(ShiftGear);
   DETOUR_DETACH(GetMaxGear);
   DETOUR_DETACH(ShiftToAutoGear);

@@ -3,9 +3,9 @@
 #include "utils/format_helpers.h"
 #include "utils/logging.h"
 
-void SMGM_HOOK_NAME(SwitchAWD)(Vehicle *veh, bool enabled) {
-  SwitchAWD(veh, enabled);
-}
+// void SMGM_HOOK_NAME(SwitchAWD)(Vehicle *veh, bool enabled) {
+//   SwitchAWD(veh, enabled);
+// }
 
 bool SMGM_HOOK_NAME(ShiftGear)(Vehicle *veh, std::int32_t gear) {
   LOG_DEBUG(fmt::format("[ {} ] Switching gear: {} => {}", FormatPointer(veh),
