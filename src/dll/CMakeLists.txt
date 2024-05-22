@@ -72,6 +72,7 @@ target_link_libraries(${TARGET_NAME}
   PUBLIC Boost::Boost
   PUBLIC dinput8
   PUBLIC dxguid
+  PUBLIC xinput
   PRIVATE $<TARGET_OBJECTS:ImGui>
 )
 add_dependencies(${TARGET_NAME} DetoursLib)

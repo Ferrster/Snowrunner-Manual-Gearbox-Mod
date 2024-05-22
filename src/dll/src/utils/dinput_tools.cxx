@@ -16,11 +16,11 @@
 
 namespace smgm::dinput {
 IDirectInput8 *dinput_inst = nullptr;
-boost::signals2::signal<void(const Device &)> sig_device_created;
-boost::signals2::signal<void(const Device &)> sig_device_released;
-boost::signals2::signal<void(const Device &, const DeviceState &)>
+boost::signals2::signal<void(std::shared_ptr<Device>)> sig_device_created;
+boost::signals2::signal<void(std::shared_ptr<Device>)> sig_device_released;
+boost::signals2::signal<void(std::shared_ptr<Device>, const DeviceState &)>
     sig_device_state;
-std::unordered_map<std::string, Device> created_devices;
+DeviceMap created_devices;
 
 std::shared_mutex mtx_devs;
 
@@ -31,10 +31,10 @@ HRESULT ProcessDeviceState(const Device &dev_info, T *out_state,
 
   HRESULT res;
 
-  if (FAILED(res = dev_info.instance->GetDeviceState(static_cast<DWORD>(size),
-                                                     out_state))) {
-    LOG_WARNING(
-        fmt::format("[{}] GetDeviceState failed ({})", dev_info.name, res));
+  if (FAILED(res = dev_info.GetInstance()->GetDeviceState(
+                 static_cast<DWORD>(size), out_state))) {
+    LOG_WARNING(fmt::format("[{}] GetDeviceState failed ({})",
+                            dev_info.GetName(), res));
   }
 
   return res;
@@ -90,12 +90,52 @@ void Release(HINSTANCE hinst) {
   // DetourDetach(&(PVOID &)g_oDInputGetDeviceData,
   //              (PVOID)Hook_DInputGetDeviceData);
 
-  dinput_inst->Release();
+  GetInstance()->Release();
 
   LOG_INFO("DirectInput8 released");
 }
 
-bool CreateDevice(const std::string &str_guid, Device *out_dev) {
+IDirectInput8 *GetInstance() { return dinput_inst; }
+
+const auto FromObjType = [](DWORD dwType) -> std::string {
+  // switch (DIDFT_GETTYPE(dwType)) {
+  //   case DIDFT_AXIS:
+  //     return "DIDFT_AXIS";
+  //   case DIDFT_BUTTON:
+  //     return "DIDFT_BUTTON";
+  //   case DIDFT_POV:
+  //     return "DIDFT_POV";
+  //   default:
+  //     return "???";
+  // }
+  const DWORD type = DIDFT_GETTYPE(dwType);
+
+  if (type & DIDFT_BUTTON) {
+    return fmt::format("Button ({})",
+                       type & DIDFT_PSHBUTTON ? "push" : "toggle");
+  } else if (type & DIDFT_AXIS) {
+    return fmt::format("Axis ({})", type & DIDFT_ABSAXIS ? "abs" : "rel");
+  } else if (type == DIDFT_POV) {
+    return "POV";
+  } else {
+    return "???";
+  }
+};
+
+// FIXME: DEBUG
+BOOL DEBUG_EnumObjects(LPCDIDEVICEOBJECTINSTANCE lpddoi, LPVOID pvRef) {
+  LOG_DEBUG(FormatDataTable(
+      fmt::format("Device object {}", std::string(lpddoi->tszName)),
+      std::make_pair("type (dwType)", FromObjType(lpddoi->dwType)),
+      std::make_pair("dwOfs", lpddoi->dwOfs),
+      std::make_pair("dwType", lpddoi->dwType),
+      std::make_pair("dwFlags", lpddoi->dwFlags),
+      std::make_pair("Instance number", DIDFT_GETINSTANCE(lpddoi->dwType))));
+
+  return DIENUM_CONTINUE;
+}
+
+std::shared_ptr<Device> CreateDevice(const std::string &str_guid) {
   LOG_INFO(fmt::format("Creating DirectInput device with GUID {}", str_guid));
 
   auto opt_guid = ToGUID(str_guid);
@@ -104,19 +144,19 @@ bool CreateDevice(const std::string &str_guid, Device *out_dev) {
     LOG_ERROR(
         fmt::format("Cannot create dinput device {}: invalid GUID format"));
 
-    return false;
+    return nullptr;
   }
 
   GUID guid = opt_guid.value();
   LPDIRECTINPUTDEVICE8 device;
 
-  if (auto res = dinput::dinput_inst->CreateDevice(guid, &device, NULL);
+  if (auto res = GetInstance()->CreateDevice(guid, &device, NULL);
       res != DI_OK) {
     LOG_ERROR(
         fmt::format("Cannot create dinput device {}: CreateDevice failed ({})!",
                     str_guid, res));
 
-    return false;
+    return nullptr;
   }
 
   DIDEVICEINSTANCE didi;
@@ -130,18 +170,29 @@ bool CreateDevice(const std::string &str_guid, Device *out_dev) {
 
     device->Release();
 
-    return false;
+    return nullptr;
   }
 
-  const auto *df = [&]() -> const DIDATAFORMAT * {
+  const auto *df = [&]() -> LPCDIDATAFORMAT {
     switch (didi.dwDevType & 0xFF) {
       case DI8DEVTYPE_KEYBOARD:
         return &c_dfDIKeyboard;
       case DI8DEVTYPE_DRIVING:
       case DI8DEVTYPE_GAMEPAD:
       case DI8DEVTYPE_JOYSTICK:
-      case DI8DEVTYPE_SUPPLEMENTAL:
+      case DI8DEVTYPE_SUPPLEMENTAL: {
+        // for (std::size_t i = 0; i < c_dfDIJoystick2.dwNumObjs; ++i) {
+        //   const DIOBJECTDATAFORMAT &diodf = c_dfDIJoystick2.rgodf[i];
+
+        //   LOG_DEBUG(fmt::format(
+        //       "{} | dwOfs={}, dwType={}, FIELD_OFFSET={}",
+        //       diodf.pguid ? FromGuidType(*diodf.pguid) : "[no guid]",
+        //       diodf.dwOfs, diodf.dwType,
+        //       FIELD_OFFSET(DIJOYSTATE2, rglVSlider[0])));
+        // }
+
         return &c_dfDIJoystick2;
+      }
       default:
         return nullptr;
     }
@@ -154,7 +205,7 @@ bool CreateDevice(const std::string &str_guid, Device *out_dev) {
 
     device->Release();
 
-    return false;
+    return nullptr;
   }
 
   if (auto res = device->SetDataFormat(df); res != DI_OK) {
@@ -164,7 +215,7 @@ bool CreateDevice(const std::string &str_guid, Device *out_dev) {
 
     device->Release();
 
-    return false;
+    return nullptr;
   }
 
   if (auto res = device->SetCooperativeLevel(
@@ -176,18 +227,81 @@ bool CreateDevice(const std::string &str_guid, Device *out_dev) {
 
     device->Release();
 
-    return false;
+    return nullptr;
   }
 
-  Device new_dev(device, didi);
+  auto new_dev = std::make_shared<Device>(device, didi, df);
 
+  new_dev->sig_device_released.connect([wp_dev = std::weak_ptr(new_dev)] {
+    if (auto dev = wp_dev.lock()) {
+      sig_device_released(dev);
+    }
+  });
   created_devices.insert({str_guid, new_dev});
-  if (out_dev) *out_dev = new_dev;
   sig_device_created(new_dev);
 
   LOG_INFO(fmt::format("Device {} created = {}", str_guid, (void *)device));
 
-  return true;
+  // FIXME: DEBUG
+  {
+    // {
+    //   DIDEVICEOBJECTINSTANCE didoi;
+    //   didoi.dwSize = sizeof(didoi);
+
+    //   auto *lpddoi = &didoi;
+
+    //   if (auto hr = new_dev->GetInstance()->GetObjectInfo(
+    //           &didoi, FIELD_OFFSET(DIJOYSTATE2, lZ), DIPH_BYOFFSET);
+    //       hr == DI_OK) {
+    //     LOG_DEBUG(FormatDataTable(
+    //         fmt::format("SUCK object {}", std::string(lpddoi->tszName)),
+    //         std::make_pair("type (guidType)",
+    //         FromGuidType(lpddoi->guidType)), std::make_pair("dwOfs",
+    //         lpddoi->dwOfs), std::make_pair("dwType", lpddoi->dwType),
+    //         std::make_pair("dwFlags", lpddoi->dwFlags),
+    //         std::make_pair("Instance number",
+    //                        DIDFT_GETINSTANCE(lpddoi->dwType))));
+    //   } else {
+    //     LOG_DEBUG(fmt::format("COCK FAILED: {}", hr));
+    //   }
+    // }
+    // {
+    //   DIDEVICEOBJECTINSTANCE doi;
+    //   doi.dwSize = sizeof(doi);
+
+    //   for (std::size_t i = 0; i < c_dfDIJoystick2.dwNumObjs; ++i) {
+    //     const DIOBJECTDATAFORMAT &diodf = c_dfDIJoystick2.rgodf[i];
+
+    //     if (auto hr = new_dev->GetInstance()->GetObjectInfo(&doi,
+    //     diodf.dwOfs,
+    //                                                         DIPH_BYOFFSET);
+    //         hr == DI_OK) {
+    //       LOG_DEBUG(fmt::format(
+    //           "name={}, type_name={}, diodf.dwType={}, doi.dwType={}, "
+    //           "diodf.dwOfs={}, doi.dwOfs={}",
+    //           std::string{doi.tszName}, FromObjType(doi.dwType),
+    //           diodf.dwType, doi.dwType, diodf.dwOfs, doi.dwOfs));
+    //     }
+    //     // } else {
+    //     //   LOG_DEBUG(fmt::format(
+    //     //       "FAILED={}, type_name={}, diodf.dwType={}, "
+    //     //       "diodf.dwOfs={}",
+    //     //       hr, FromObjType(diodf.dwType), diodf.dwType, diodf.dwOfs));
+    //     // }
+
+    //     // LOG_DEBUG(fmt::format(
+    //     //     "{} | dwOfs={}, dwType={}, FIELD_OFFSET={}",
+    //     //     diodf.pguid ? FromGuidType(*diodf.pguid) : "[no guid]",
+    //     //     diodf.dwOfs, diodf.dwType, FIELD_OFFSET(DIJOYSTATE2,
+    //     //     rglVSlider[0])));
+    //   }
+    // }
+    // new_dev->GetInstance()->EnumObjects(&DEBUG_EnumObjects, nullptr,
+    //                                     DIDFT_AXIS | DIDFT_BUTTON |
+    //                                     DIDFT_POV);
+  }
+
+  return new_dev;
 }
 
 bool ReleaseDevice(const std::string &guid) {
@@ -200,11 +314,10 @@ bool ReleaseDevice(const std::string &guid) {
   }
 
   std::unique_lock lck(mtx_devs);
-  Device dev = created_devices[guid];
+  std::shared_ptr<Device> dev = created_devices[guid];
 
-  dev.instance->Release();
+  dev->Release();
   created_devices.erase(guid);
-  sig_device_released(dev);
 
   LOG_INFO(fmt::format("Device {} was released", guid));
 
@@ -215,8 +328,8 @@ bool IsDeviceCreated(const std::string &guid) {
   return created_devices.count(guid) != 0;
 }
 
-Device GetDevice(const std::string &guid) {
-  return IsDeviceCreated(guid) ? created_devices[guid] : Device{};
+std::shared_ptr<Device> GetDevice(const std::string &guid) {
+  return IsDeviceCreated(guid) ? created_devices[guid] : nullptr;
 }
 
 const DeviceMap &GetDeviceMap() { return created_devices; }
@@ -230,7 +343,7 @@ void PollDeviceStates() {
   }
 
   for (const auto &[_, dev_info] : devices) {
-    LPDIRECTINPUTDEVICE8 dev = dev_info.instance;
+    LPDIRECTINPUTDEVICE8 dev = dev_info->GetInstance();
     HRESULT hr = dev->Poll();
 
     if (FAILED(hr)) {
@@ -243,11 +356,11 @@ void PollDeviceStates() {
 
     DeviceState state;
 
-    switch (dev_info.type & 0xFF) {
+    switch (dev_info->GetType() & 0xFF) {
       case DI8DEVTYPE_KEYBOARD: {
         std::array<BYTE, 256> kb_state;
 
-        if (SUCCEEDED(hr = ProcessDeviceState(dev_info, kb_state.data(),
+        if (SUCCEEDED(hr = ProcessDeviceState(*dev_info, kb_state.data(),
                                               kb_state.size())))
           state = kb_state;
 
@@ -259,7 +372,7 @@ void PollDeviceStates() {
       case DI8DEVTYPE_SUPPLEMENTAL: {
         DIJOYSTATE2 js;
 
-        if (SUCCEEDED(hr = ProcessDeviceState(dev_info, &js, sizeof(js))))
+        if (SUCCEEDED(hr = ProcessDeviceState(*dev_info, &js, sizeof(js))))
           state = js;
 
         break;

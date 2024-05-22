@@ -6,6 +6,7 @@
 
 #include "Windows.h"
 #include "imgui.h"
+#include "smgm/input/keybinding.h"
 #include "smgm/utils/dinput_tools.h"
 
 namespace smgm {
@@ -32,6 +33,12 @@ class Ui {
   void AddDInputDevice(const ListEntryDInputDevice &info);
   void RemoveDInputDevice(LPCDIDEVICEINSTANCE device);
 
+ private:
+  void PopupSetKeybind(const char *popup_name, input::Keybind &keybind,
+                       bool &is_set);
+  void UpdateDIDevices();
+
+ public:
   bool is_open = true;
 
  private:

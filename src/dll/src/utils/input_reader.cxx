@@ -1,6 +1,7 @@
 #include "smgm/utils/input_reader.h"
 
 #include <fmt/core.h>
+#include <smgm/input/actions.h>
 #include <winerror.h>
 #include <winuser.h>
 
@@ -19,6 +20,8 @@
 #include "smgm/utils/logging.h"
 
 namespace smgm {
+
+using namespace smgm::input;
 
 inline const WORD FromHex(const std::string &value) {
   return static_cast<WORD>(std::stoi(value, nullptr, 16));

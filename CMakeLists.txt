@@ -21,6 +21,7 @@ ExternalProject_Add(DetoursLib
   CONFIGURE_COMMAND ""
   BUILD_COMMAND ""
   INSTALL_COMMAND ""
+  UPDATE_DISCONNECTED ON
 )
 ExternalProject_Get_Property(DetoursLib SOURCE_DIR)
 ExternalProject_Add_Step(DetoursLib _build
@@ -30,7 +31,6 @@ ExternalProject_Add_Step(DetoursLib _build
   ${SOURCE_DIR}/lib.X64/detours.lib
   ${SOURCE_DIR}/lib.X64/syelog.lib
 )
-
 link_directories(${SOURCE_DIR}/lib.X64)
 include_directories(${SOURCE_DIR}/include)
 

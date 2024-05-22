@@ -6,11 +6,17 @@
 #include <winnt.h>
 #include <winuser.h>
 
+#include <fstream>
+#include <sstream>
+
 #include "boost/uuid/string_generator.hpp"
 #include "boost/uuid/uuid.hpp"
 #include "detours.h"
+#include "nlohmann/json.hpp"
 #include "smgm/game/data_types/combine/truck_control.h"
 #include "smgm/input/dinput_reader.h"
+#include "smgm/input/v2/input_reader.h"
+#include "smgm/json/fields.h"
 #include "smgm/utils/d3d11_tools.h"
 #include "smgm/utils/detours_helpers.h"
 #include "smgm/utils/dinput_tools.h"
@@ -63,6 +69,10 @@ std::atomic_bool is_exiting = false;
 smgm::Ui ui;
 InputReader input_reader;
 input::DirectInputReader dinput_reader;
+json::Config config;
+input::v2::DeviceManager device_manager;
+input::v2::InputReader new_input_reader;
+boost::signals2::signal<void()> sig_tick;
 
 HWND game_window = nullptr;
 
@@ -106,12 +116,29 @@ bool Init(HINSTANCE hinst) {
   using namespace std::placeholders;
   d3d11::sig_hook_initialized.connect([](const d3d11::HookParams &params) {
     game_window = params.window;
+
+    // std::shared_ptr<dinput::Device> dev =
+    //     dinput::CreateDevice(FromGUID(GUID_SysKeyboard));
+
+    dinput_reader.LoadFromConfig(
+        config.GetConfig().at(json::Config::kFieldKeybindings));
+
+    // if (dev) {
+    //   dinput_reader.BindAction(dev->GetGUID(),
+    //                            input::DirectInputReader::ActionKeybind(
+    //                                "2 + 3",
+    //                                input::InputAction::SHIFT_4_GEAR),
+    //                            [] { LOG_DEBUG("cringe"); });
+    // }
+
     ui.Init({params.window, params.device, params.ctx, params.rtv});
   });
-  d3d11::sig_tick.connect([](const d3d11::HookParams &params) {
-    dinput::PollDeviceStates();
+  sig_tick.connect([] {
+    // dinput::PollDeviceStates();
+    new_input_reader.ProcessInput(device_manager.GetDevices());
     ui.Draw();
   });
+  d3d11::sig_tick.connect([](const d3d11::HookParams &params) { sig_tick(); });
   d3d11::sig_wnd_proc.connect([](const HWND hWnd, UINT uMsg, WPARAM wParam,
                                  LPARAM lParam, bool &skipOrigWndProc) {
     if (ui.is_open) {
@@ -119,8 +146,8 @@ bool Init(HINSTANCE hinst) {
       // skipOrigWndProc = true;
     }
   });
-  dinput::sig_device_state.connect(
-      std::bind(&input::DirectInputReader::Process, &dinput_reader, _1, _2));
+  // dinput::sig_device_state.connect(
+  //     std::bind(&input::DirectInputReader::Process, &dinput_reader, _1, _2));
 
   DetourRestoreAfterWith();
   DetourTransactionBegin();
@@ -133,6 +160,16 @@ bool Init(HINSTANCE hinst) {
   DETOUR_ATTACH(SetCurrentVehicle);
 
   DetourTransactionCommit();
+
+  {
+    const std::filesystem::path config_path =
+        std::filesystem::current_path() / "smgm.json";
+    try {
+      config = json::Config(config_path);
+    } catch (const std::exception &e) {
+      LOG_ERROR(fmt::format("Load config exception: {}", e.what()));
+    }
+  }
 
   input_reader.BindKeyboard(VK_F1, [] {
     is_exiting = true;

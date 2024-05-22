@@ -79,18 +79,18 @@ class Vehicle {
 
   bool ShiftToNeutral();
 
-  char pad_0000[88];                                  // 0x0000
-  class combine::TruckAddonModel *truck_addon_model;  // 0x0058
-  class combine::TruckAction *truck_action;           // 0x0060
+  char pad_0000[120];                                 // 0x0000
+  class combine::TruckAddonModel *truck_addon_model;  // 0x0078
+  class combine::TruckAction *truck_action;           // 0x0080
   class combine::TruckPostSimulationListener
-      *truck_post_sim_listener;     // 0x0068
-  char pad_0070[164];               // 0x0070
-  float stall_counter;              // 0x0114
-  char pad_0118[1496];              // 0x0118
-  std::uint32_t ignition;           // 0x06F0
-  char pad_06F4[84];                // 0x06F4
-  std::uint32_t q_veh_state_flags;  // 0x0748
-  char pad_074C[244];               // 0x074C
-};                                  // Size: 0x0440
+      *truck_post_sim_listener;     // 0x0088
+  char pad_0090[164];               // 0x0090
+  float stall_counter;              // 0x0134
+  char pad_0138[1496];              // 0x0138
+  std::uint32_t ignition;           // 0x0710
+  char pad_0714[84];                // 0x0714
+  std::uint32_t q_veh_state_flags;  // 0x0768
+  char pad_076C[244];               // 0x076C
+};
 
 }  // namespace smgm

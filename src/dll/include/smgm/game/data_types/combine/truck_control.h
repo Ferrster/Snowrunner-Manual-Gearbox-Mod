@@ -11,7 +11,7 @@ namespace combine {
 class TruckControl {
  public:
   inline static const auto kInstancePtr =
-      GetPtrToOffset<combine::TruckControl *>(0x2EB7528);
+      GetPtrToOffset<combine::TruckControl *>(0x2EC2488);
 
   inline static Vehicle *GetCurrentVehicle() {
     if (!*kInstancePtr) return nullptr;
