@@ -149,35 +149,38 @@ bool DirectInputReader::UnbindAction(const std::string& device_guid,
 }
 
 bool DirectInputReader::LoadFromConfig(const nlohmann::json& config) {
-  try {
-    for (const auto& el : config) {
-      json::Keybind json_kb = el;
+  return false;
+  // try {
+  //   for (const auto& el : config) {
+  //     json::Keybind json_kb = el;
 
-      LOG_DEBUG(FormatDataTable("Keybind", std::pair{"Action", json_kb.action},
-                                std::pair{"Device", json_kb.device_guid},
-                                std::pair{"Keybind", json_kb.keybind}));
+  //     LOG_DEBUG(FormatDataTable("Keybind", std::pair{"Action",
+  //     json_kb.action},
+  //                               std::pair{"Device", json_kb.device_guid},
+  //                               std::pair{"Keybind", json_kb.keybind}));
 
-      const auto action = EnumFromString<InputAction>(json_kb.action);
-      auto action_cb = GetCallbackForAction(action);
+  //     const auto action = EnumFromString<InputAction>(json_kb.action);
+  //     auto action_cb = GetCallbackForAction(action);
 
-      if (!action_cb) {
-        continue;
-      }
+  //     if (!action_cb) {
+  //       continue;
+  //     }
 
-      Keybind kb(json_kb.keybind);
+  //     Keybind kb(json_kb.keybind);
 
-      if (!BindAction(json_kb.device_guid, ActionKeybind(std::move(kb), action),
-                      action_cb)) {
-        continue;
-      }
-    }
-  } catch (const std::exception& e) {
-    LOG_ERROR(
-        fmt::format("Failed to load keybindings from config: {}", e.what()));
-    return false;
-  }
+  //     if (!BindAction(json_kb.device_guid, ActionKeybind(std::move(kb),
+  //     action),
+  //                     action_cb)) {
+  //       continue;
+  //     }
+  //   }
+  // } catch (const std::exception& e) {
+  //   LOG_ERROR(
+  //       fmt::format("Failed to load keybindings from config: {}", e.what()));
+  //   return false;
+  // }
 
-  return true;
+  // return true;
 }
 
 std::vector<input::Key> DirectInputReader::GetPressedKeys(

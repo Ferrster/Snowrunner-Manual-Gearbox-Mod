@@ -2,7 +2,7 @@ set(TARGET_NAME smgm)
 
 find_package(fmt REQUIRED)
 find_package(spdlog 1.11 REQUIRED)
-find_package(Boost 1.80.0)
+find_package(Boost 1.81.0)
 
 set(SMGM_USE_IMGUI ON CACHE BOOL "Use ImGui for in-game configuration of the mod")
 

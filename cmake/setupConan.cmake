@@ -11,7 +11,7 @@ list(APPEND CMAKE_PREFIX_PATH ${CMAKE_BINARY_DIR})
 
 conan_cmake_configure(REQUIRES
    fmt/9.1.0
-   boost/1.80.0
+   boost/1.81.0
    GENERATORS cmake_find_package)
 
 conan_cmake_autodetect(settings)
