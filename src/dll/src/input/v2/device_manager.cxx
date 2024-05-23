@@ -131,7 +131,7 @@ std::shared_ptr<dinput::DI_Device> DeviceManager::CreateDirectInputDevice(
   // });
   // created_devices.insert({str_guid, new_dev});
   // sig_device_created(new_dev);
-  devs_.emplace_back(new_dev);
+  Add(new_dev);
 
   LOG_INFO(fmt::format("Device {} created = {}", str_guid, (void*)device));
 
@@ -188,7 +188,7 @@ std::vector<std::shared_ptr<Device>> DeviceManager::RefreshXInputDevices() {
     LOG_INFO(fmt::format("Created XInput device \"{}\"",
                          new_device->GetDisplayName()));
 
-    devs_.emplace_back(new_device);
+    Add(new_device, false);
     new_devices.emplace_back(new_device);
   }
 
