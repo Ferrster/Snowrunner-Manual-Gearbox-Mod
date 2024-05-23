@@ -8,7 +8,7 @@
 namespace smgm::input::v2 {
 class DeviceManager final {
  public:
-  bool Add(std::shared_ptr<Device> dev);
+  bool Add(std::shared_ptr<Device> dev, bool check_unique = true);
   void Remove(std::shared_ptr<Device> dev);
   void RemoveByID(const std::string& id);
   const auto& GetDevices() const noexcept { return devs_; }

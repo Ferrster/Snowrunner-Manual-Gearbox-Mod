@@ -13,9 +13,11 @@
 #include "smgm/utils/logging.h"
 
 namespace smgm::input::v2 {
-bool DeviceManager::Add(std::shared_ptr<Device> dev) {
-  if (std::find(begin(devs_), end(devs_), dev) != end(devs_)) {
-    return false;
+bool DeviceManager::Add(std::shared_ptr<Device> dev, bool check_unique) {
+  if (check_unique) {
+    if (std::find(begin(devs_), end(devs_), dev) != end(devs_)) {
+      return false;
+    }
   }
 
   devs_.emplace_back(dev);
