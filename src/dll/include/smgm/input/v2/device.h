@@ -5,6 +5,7 @@
 #include <string>
 #include <vector>
 
+#include "smgm/input/v2/device_id.h"
 #include "smgm/input/v2/input_object.h"
 #include "smgm/input/v2/input_state.h"
 
@@ -23,7 +24,7 @@ class Device {
   Device& operator=(Device&&) = default;
   inline API GetAPI() const noexcept { return api_; }
   const auto& GetInputObjects() const noexcept { return input_objs_; }
-  const std::string& GetID() const noexcept { return id_; }
+  const DeviceID& GetID() const noexcept { return id_; }
   const std::string& GetSystemID() const noexcept { return sys_id_; }
   const std::string& GetDisplayName() const noexcept { return display_name_; }
   [[nodiscard]] virtual std::shared_ptr<InputState> GetCurrentState() const = 0;
@@ -37,7 +38,7 @@ class Device {
 
  protected:
   API api_ = API::kUnknown;
-  std::string id_;
+  DeviceID id_;
   std::string sys_id_;
   std::string display_name_;
   std::vector<std::shared_ptr<InputObject>> input_objs_;
