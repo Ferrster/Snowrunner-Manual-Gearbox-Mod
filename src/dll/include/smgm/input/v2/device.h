@@ -28,6 +28,7 @@ class Device {
   const std::string& GetSystemID() const noexcept { return sys_id_; }
   const std::string& GetDisplayName() const noexcept { return display_name_; }
   [[nodiscard]] virtual std::shared_ptr<InputState> GetCurrentState() const = 0;
+  std::shared_ptr<InputObject> FindInputObject(const InputID& input_id) const;
 
  protected:
   virtual ~Device() { sig_destroyed(); }

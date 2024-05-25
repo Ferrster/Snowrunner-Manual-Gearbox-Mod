@@ -1,14 +1,13 @@
 #include "smgm/input/v2/device.h"
 
 namespace smgm::input::v2 {
-// std::shared_ptr<InputObject> Device::GetInputObjectById(
-//     const InputObject::IdType& id) const {
-//   const auto& objs = GetInputObjects();
-//   auto it = std::find_if(begin(objs), end(objs),
-//                          [&id](const std::shared_ptr<InputObject>& el) {
-//                            return el->GetId() == id;
-//                          });
+std::shared_ptr<InputObject> Device::FindInputObject(
+    const InputID& input_id) const {
+  auto it = std::find_if(begin(GetInputObjects()), end(GetInputObjects()),
+                         [&input_id](const std::shared_ptr<InputObject>& item) {
+                           return item->GetInputID() == input_id;
+                         });
 
-//   return it == end(objs) ? nullptr : *it;
-// }
+  return it != end(GetInputObjects()) ? *it : nullptr;
+}
 }  // namespace smgm::input::v2
