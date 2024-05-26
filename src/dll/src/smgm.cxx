@@ -13,8 +13,11 @@
 #include "boost/uuid/uuid.hpp"
 #include "detours.h"
 #include "nlohmann/json.hpp"
+#include "smgm/actions/action.h"
 #include "smgm/game/data_types/combine/truck_control.h"
 #include "smgm/input/dinput_reader.h"
+#include "smgm/input/v2/input_binding.h"
+#include "smgm/input/v2/input_bindings_manager.h"
 #include "smgm/input/v2/input_reader.h"
 #include "smgm/json/fields.h"
 #include "smgm/utils/d3d11_tools.h"
@@ -72,6 +75,7 @@ input::DirectInputReader dinput_reader;
 json::Config config;
 input::v2::DeviceManager device_manager;
 input::v2::InputReader new_input_reader;
+input::v2::InputBindingsManager input_bindings_manager;
 boost::signals2::signal<void()> sig_tick;
 
 HWND game_window = nullptr;
@@ -135,7 +139,18 @@ bool Init(HINSTANCE hinst) {
   });
   sig_tick.connect([] {
     // dinput::PollDeviceStates();
-    new_input_reader.ProcessInput(device_manager.GetDevices());
+    const auto devices = device_manager.GetDevices();
+
+    new_input_reader.ProcessInput(devices);
+
+    for (const auto &device : devices) {
+      const auto last_state = new_input_reader.GetLastInputState(device);
+
+      if (!last_state) continue;
+
+      input_bindings_manager.ProcessBindings(*device, *last_state);
+    }
+
     ui.Draw();
   });
   d3d11::sig_tick.connect([](const d3d11::HookParams &params) { sig_tick(); });

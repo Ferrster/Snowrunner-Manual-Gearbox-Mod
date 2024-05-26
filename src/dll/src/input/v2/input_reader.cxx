@@ -101,4 +101,13 @@ void InputReader::UpdateLastState(const std::shared_ptr<Device>& device,
                                   const std::shared_ptr<InputState>& state) {
   last_states_.insert_or_assign(device, state);
 }
+
+std::shared_ptr<InputState> InputReader::GetLastInputState(
+    const std::shared_ptr<Device>& device) const {
+  if (last_states_.count(device) == 0) {
+    return nullptr;
+  }
+
+  return last_states_.at(device);
+}
 }  // namespace smgm::input::v2

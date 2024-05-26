@@ -11,6 +11,8 @@ namespace smgm::input::v2 {
 class InputReader {
  public:
   bool ProcessInput(const std::vector<std::shared_ptr<Device>>& devices);
+  std::shared_ptr<InputState> GetLastInputState(
+      const std::shared_ptr<Device>& device) const;
 
  protected:
   void ClearStates(const std::shared_ptr<Device>& device);
