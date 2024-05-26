@@ -1,5 +1,7 @@
 #pragma once
 
+#include <fmt/format.h>
+
 #include <boost/log/trivial.hpp>
 #include <string>
 
