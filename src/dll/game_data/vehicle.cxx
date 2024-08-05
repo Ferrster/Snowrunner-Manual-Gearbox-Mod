@@ -1,5 +1,6 @@
 #include "game_data/data_types.h"
 #include "game_data/game_data.h"
+#include "utils/hooks.h"
 
 #include <algorithm>
 

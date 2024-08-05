@@ -1,6 +1,5 @@
 #include "Windows.h"
 #include "Xinput.h"
-#include "detours.h"
 #include <consoleapi.h>
 #include <filesystem>
 #include <libloaderapi.h>
@@ -24,14 +23,9 @@
 #include "game_data/game_data.h"
 #include "spdlog/spdlog.h"
 #include "utils/format_helpers.h"
+#include "utils/hooks.h"
 #include "utils/input_reader.h"
 #include "utils/logging.h"
-
-#define DETOUR_ATTACH(Src)                                                     \
-  if (DetourAttach(&(PVOID &)Src, (PVOID)SMGM_HOOK_NAME(Src)) != NO_ERROR)     \
-  LOG_DEBUG("Failed to hook function " #Src)
-#define DETOUR_DETACH(Src)                                                     \
-  DetourDetach(&(PVOID &)Src, (PVOID)SMGM_HOOK_NAME(Src))
 
 std::atomic_bool g_Shutdown = false;
 smgm::InputReader *g_InputReader = nullptr;
@@ -59,19 +53,12 @@ void Init(HINSTANCE hinst, DWORD dwReason, LPVOID reserved) {
   spdlog::set_level(spdlog::level::debug);
   spdlog::set_pattern("[%H:%M:%S %z] [%n] [%^---%L---%$] [thread %t] %v");
 
-  LOG_DEBUG("SnowRunner Manual Gearbox v0.1.10");
+  LOG_DEBUG("SnowRunner Manual Gearbox v0.1.11");
 
+#ifdef SMGM_USE_DETOURS
   DetourRestoreAfterWith();
-  DetourTransactionBegin();
-  DetourUpdateThread(GetCurrentThread());
-
-  // DETOUR_ATTACH(SwitchAWD);
-  DETOUR_ATTACH(ShiftGear);
-  DETOUR_ATTACH(GetMaxGear);
-  DETOUR_ATTACH(ShiftToAutoGear);
-  DETOUR_ATTACH(SetCurrentVehicle);
-
-  DetourTransactionCommit();
+#endif
+  smgm::AttachHooks();
 
   g_InputReader = new smgm::InputReader;
   g_InputReader->BindKeyboard(VK_F1, [] { g_InputReader->Stop(); });
@@ -94,29 +81,13 @@ void Init(HINSTANCE hinst, DWORD dwReason, LPVOID reserved) {
 void Teardown(HINSTANCE hinst, DWORD dwReason, LPVOID reserved) {
   LOG_DEBUG("DLL Detach");
 
-  DetourTransactionBegin();
-  DetourUpdateThread(GetCurrentThread());
-
-  // DETOUR_DETACH(SwitchAWD);
-  DETOUR_DETACH(ShiftGear);
-  DETOUR_DETACH(GetMaxGear);
-  DETOUR_DETACH(ShiftToAutoGear);
-  DETOUR_DETACH(SetCurrentVehicle);
-
-  DetourTransactionCommit();
-
-  // free(g_InputReader);
-
+  smgm::DetachHooks();
 #ifndef SMGM_NO_CONSOLE
   FreeConsole();
 #endif
 }
 
 BOOL APIENTRY DllMain(HINSTANCE hinst, DWORD dwReason, LPVOID reserved) {
-  if (DetourIsHelperProcess()) {
-    return TRUE;
-  }
-
   if (dwReason == DLL_PROCESS_ATTACH) {
     Init(hinst, dwReason, reserved);
   } else if (dwReason == DLL_PROCESS_DETACH) {

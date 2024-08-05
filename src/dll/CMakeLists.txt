@@ -1,8 +1,8 @@
 set(TARGET_NAME smgm)
 
-find_package(fmt REQUIRED)
+find_package(fmt 10.0 REQUIRED)
 find_package(spdlog 1.11 REQUIRED)
-find_package(Boost 1.80.0)
+find_package(Boost 1.80.0 CONFIG REQUIRED)
 
 # find_package(Boost 1.80 COMPONENTS log log_setup REQUIRED)
 add_library(${TARGET_NAME} SHARED
@@ -16,6 +16,8 @@ add_library(${TARGET_NAME} SHARED
   utils/format_helpers.cxx
   utils/input_reader.h
   utils/input_reader.cxx
+  utils/hooks.h
+  utils/hooks.cxx
   custom_functions.h
   custom_functions.cxx
   main.cxx
@@ -24,12 +26,23 @@ target_compile_definitions(${TARGET_NAME}
   PUBLIC BOOST_USE_WINAPI_VERSION=1536 # <= Win Vista
   PUBLIC NOMINMAX
   PRIVATE _CRT_SECURE_NO_WARNINGS
+  PUBLIC SMGM_TITLE="${PROJECT_NAME}"
 )
 
 if(SMGM_NO_CONSOLE)
   target_compile_definitions(${TARGET_NAME}
     PRIVATE SMGM_NO_CONSOLE
   )
+endif()
+
+if(SMGM_USE_DETOURS)
+  target_compile_definitions(${TARGET_NAME}
+    PRIVATE SMGM_USE_DETOURS
+  )
+  target_link_libraries(${TARGET_NAME}
+    PRIVATE detours
+  )
+  add_dependencies(${TARGET_NAME} DetoursLib)
 endif()
 
 target_link_directories(${TARGET_NAME}
@@ -41,10 +54,8 @@ target_include_directories(${TARGET_NAME}
   PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}
 )
 target_link_libraries(${TARGET_NAME}
-  PUBLIC detours
   PUBLIC fmt::fmt
   PUBLIC spdlog::spdlog
-  PUBLIC Boost::Boost
+  PUBLIC Boost::boost
   PUBLIC xinput
 )
-add_dependencies(${TARGET_NAME} DetoursLib)
