@@ -1,0 +1,49 @@
+# This starter workflow is for a CMake project running on a single platform. There is a different starter workflow if you need cross-platform coverage.
+# See: https://github.com/actions/starter-workflows/blob/main/ci/cmake-multi-platform.yml
+name: CMake on a single platform
+
+on:
+  push:
+    branches: [ "v0.2" ]
+  pull_request:
+    branches: [ "v0.2" ]
+
+env:
+  BUILD_TYPE: Release
+  CONAN_BUILD_TYPE: conan-release
+
+jobs:
+  build:
+    name: Build
+    runs-on: windows-latest
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - uses: TheMrMilchmann/setup-msvc-dev@v3.0.1
+      with:
+        arch: x64
+        toolset: 14.2
+
+    - name: Get Ninja
+      uses: turtlesec-no/get-ninja@1.1.0
+
+    - name: Install Conan
+      uses: turtlebrowser/get-conan@v1.2
+      with:
+        version: 2.6.0
+
+    - name: Set up Conan config
+      run: |
+            conan profile detect --force
+            conan config install ${{github.workspace}}/conan2_config.zip
+
+    - name: Install Conan dependencies
+      run: conan install ${{github.workspace}} -of ${{github.workspace}}\build -g CMakeDeps -g CMakeToolchain --build=missing -s build_type=Release -s compiler.cppstd=17
+
+    - name: Configure CMake
+      run: ${{github.workspace}}\build\conanbuild.bat && cmake --preset ${{env.CONAN_BUILD_TYPE}}
+
+    - name: Build
+      run: cmake --build ${{github.workspace}}\build --config ${{env.CONAN_BUILD_TYPE}}
+
