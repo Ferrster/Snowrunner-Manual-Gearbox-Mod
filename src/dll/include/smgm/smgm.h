@@ -8,15 +8,14 @@
 #include "smgm/input/v2/device_manager.h"
 #include "smgm/json/config.h"
 #include "smgm/ui/ui.h"
+#include "smgm/utils/hooks.h"
 #include "smgm/utils/input_reader.h"
-#include "smgm/utils/utils.h"
 
-SMGM_GAME_FUNCTION(0xD5D0B0, void, SwitchAWD, smgm::Vehicle *, bool);
-SMGM_GAME_FUNCTION(0xD554E0, bool, ShiftGear, smgm::Vehicle *, std::int32_t);
-SMGM_GAME_FUNCTION(0xD55240, std::int32_t, GetMaxGear, const smgm::Vehicle *);
-SMGM_GAME_FUNCTION(0xD55290, void, ShiftToAutoGear, smgm::Vehicle *);
-SMGM_GAME_FUNCTION(0xD54680, void, SetPowerCoef, smgm::Vehicle *, float);
-SMGM_GAME_FUNCTION(0xAD6B20, void, SetCurrentVehicle,
+SMGM_GAME_FUNCTION(0xD50510, bool, ShiftGear, smgm::Vehicle *, std::int32_t);
+SMGM_GAME_FUNCTION(0xD50270, std::int32_t, GetMaxGear, const smgm::Vehicle *);
+SMGM_GAME_FUNCTION(0xD502C0, void, ShiftToAutoGear, smgm::Vehicle *);
+SMGM_GAME_FUNCTION(0xD4F6B0, void, SetPowerCoef, smgm::Vehicle *, float);
+SMGM_GAME_FUNCTION(0xAC9C50, void, SetCurrentVehicle,
                    smgm::combine::TruckControl *, smgm::Vehicle *);
 
 #ifndef SMGM_TITLE

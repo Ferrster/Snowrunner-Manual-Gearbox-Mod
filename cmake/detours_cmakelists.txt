@@ -1,0 +1,15 @@
+cmake_minimum_required(VERSION 3.14)
+
+project(Detours LANGUAGES C CXX)
+
+set(TARGET_NAME detours)
+add_library(${TARGET_NAME} STATIC
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/detours.h
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/detours.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/creatwth.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/modules.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/disasm.cpp
+)
+target_include_directories(${TARGET_NAME}
+  PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/src
+)

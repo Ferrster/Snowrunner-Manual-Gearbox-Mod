@@ -1,6 +1,9 @@
 #include "Windows.h"
-#include "detours.h"
 #include "smgm/smgm.h"
+
+#ifdef SMGM_USE_DETOURS
+#include "detours.h"
+#endif
 
 void OnDLLAttach(HINSTANCE hinst, DWORD dwReason, LPVOID reserved) {
   DisableThreadLibraryCalls(hinst);
@@ -13,9 +16,11 @@ void OnDLLDetach(HINSTANCE hinst, DWORD dwReason, LPVOID reserved) {
 }
 
 BOOL APIENTRY DllMain(HINSTANCE hinst, DWORD dwReason, LPVOID reserved) {
+#ifdef SMGM_USE_DETOURS
   if (DetourIsHelperProcess()) {
     return TRUE;
   }
+#endif
 
   if (dwReason == DLL_PROCESS_ATTACH) {
     OnDLLAttach(hinst, dwReason, reserved);

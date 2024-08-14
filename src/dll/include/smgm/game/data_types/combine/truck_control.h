@@ -2,7 +2,7 @@
 
 #include "smgm/game/data_types/combine/sound_object.h"
 #include "smgm/game/data_types/string.h"
-#include "smgm/utils/utils.h"
+#include "smgm/utils/memory.h"
 
 namespace smgm {
 class Vehicle;
@@ -11,7 +11,7 @@ namespace combine {
 class TruckControl {
  public:
   inline static const auto kInstancePtr =
-      GetPtrToOffset<combine::TruckControl *>(0x2EC2488);
+      GetPtrToOffset<combine::TruckControl *>(0x29A88B8);
 
   inline static Vehicle *GetCurrentVehicle() {
     if (!*kInstancePtr) return nullptr;
@@ -28,6 +28,6 @@ class TruckControl {
   char pad_0088[8];              // 0x0088
   class String *N00000950;       // 0x0090
   char pad_0098[936];            // 0x0098
-};                               // Size: 0x0440
+};  // Size: 0x0440
 }  // namespace combine
 }  // namespace smgm

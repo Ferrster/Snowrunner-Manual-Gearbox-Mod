@@ -32,10 +32,6 @@ extern LRESULT ImGui_ImplWin32_WndProcHandler(HWND hWnd, UINT msg,
 
 // ===================== HOOKS =====================
 
-void SMGM_HOOK_NAME(SwitchAWD)(smgm::Vehicle *veh, bool enabled) {
-  SwitchAWD(veh, enabled);
-}
-
 bool SMGM_HOOK_NAME(ShiftGear)(smgm::Vehicle *veh, std::int32_t gear) {
   LOG_DEBUG(fmt::format("[ {} ] Switching gear: {} => {}", FormatPointer(veh),
                         veh->truck_action->gear_1, gear));
@@ -115,7 +111,7 @@ bool Init(HINSTANCE hinst) {
   freopen("CONOUT$", "w", stderr);
 #endif
 
-  LOG_INFO("SnowRunner Manual Gearbox v0.1");
+  LOG_INFO("SnowRunner Manual Gearbox v0.2");
 
   using namespace std::placeholders;
   d3d11::sig_hook_initialized.connect([](const d3d11::HookParams &params) {
@@ -124,8 +120,12 @@ bool Init(HINSTANCE hinst) {
     // std::shared_ptr<dinput::Device> dev =
     //     dinput::CreateDevice(FromGUID(GUID_SysKeyboard));
 
-    dinput_reader.LoadFromConfig(
-        config.GetConfig().at(json::Config::kFieldKeybindings));
+    try {
+      dinput_reader.LoadFromConfig(
+          config.GetConfig().at(json::Config::kFieldKeybindings));
+    } catch (const std::exception &e) {
+      LOG_DEBUG(fmt::format("cringe {}", e.what()));
+    }
 
     // if (dev) {
     //   dinput_reader.BindAction(dev->GetGUID(),
@@ -168,7 +168,6 @@ bool Init(HINSTANCE hinst) {
   DetourTransactionBegin();
   DetourUpdateThread(GetCurrentThread());
 
-  DETOUR_ATTACH(SwitchAWD);
   DETOUR_ATTACH(ShiftGear);
   DETOUR_ATTACH(GetMaxGear);
   DETOUR_ATTACH(ShiftToAutoGear);
@@ -216,7 +215,6 @@ void Destroy(HINSTANCE hinst) {
   DetourTransactionBegin();
   DetourUpdateThread(GetCurrentThread());
 
-  DETOUR_DETACH(SwitchAWD);
   DETOUR_DETACH(ShiftGear);
   DETOUR_DETACH(GetMaxGear);
   DETOUR_DETACH(ShiftToAutoGear);

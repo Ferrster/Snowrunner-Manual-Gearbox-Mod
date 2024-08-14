@@ -10,12 +10,6 @@
 #include "smgm/input/v2/input_state.h"
 
 namespace {
-// template <typename T, typename DataT>
-// T ReadObjectValue(const DataT& data, const DIOBJECTDATAFORMAT& obj) {
-//   return *reinterpret_cast<const T*>(reinterpret_cast<const BYTE*>(&data) +
-//                                      obj.dwOfs);
-// }
-
 template <typename InputDataT, typename TargetInputT, typename InputT,
           typename StateDataT>
 InputDataT ReadObjectValue(const StateDataT& data, const InputT& input_obj) {
@@ -66,6 +60,4 @@ class DI_InputState : public InputState {
 using DI_KeyboardState = DI_InputState<std::array<BYTE, 256>>;
 using DI_JoystickState = DI_InputState<DIJOYSTATE2>;
 
-// class DI_KeyboardState final : public DI_InputState<std::array<BYTE, 256>>
-// {}; class DI_JoystickState final : public DI_InputState<DIJOYSTATE2> {};
 }  // namespace smgm::input::v2::dinput

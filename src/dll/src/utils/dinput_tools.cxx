@@ -7,12 +7,10 @@
 #include <unordered_map>
 #include <utility>
 
-#include "detours.h"
 #include "smgm/smgm.h"
 #include "smgm/utils/format_helpers.h"
 #include "smgm/utils/guid.h"
 #include "smgm/utils/logging.h"
-#include "smgm/utils/utils.h"
 
 namespace smgm::dinput {
 IDirectInput8 *dinput_inst = nullptr;

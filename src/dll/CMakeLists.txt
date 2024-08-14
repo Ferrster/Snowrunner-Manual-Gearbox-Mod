@@ -1,8 +1,30 @@
 set(TARGET_NAME smgm)
 
 find_package(fmt REQUIRED)
-find_package(spdlog 1.11 REQUIRED)
-find_package(Boost 1.81.0)
+find_package(Boost CONFIG REQUIRED)
+
+set(SMGM_USE_DETOURS ON CACHE BOOL "Use detours for hooking")
+
+if(SMGM_USE_DETOURS)
+  include(FetchContent)
+  FetchContent_Declare(detours
+    GIT_REPOSITORY https://github.com/microsoft/Detours.git
+    GIT_TAG origin/main
+    PATCH_COMMAND ${CMAKE_COMMAND}
+    -DSMGM_PROJECT_DIR=${PROJECT_SOURCE_DIR}
+    -DDETOURS_SOURCE_DIR=<SOURCE_DIR>
+    -DDETOURS_SOURCE_CMAKELISTS_PATH=${PROJECT_SOURCE_DIR}/cmake/detours_cmakelists.txt
+    -P ${PROJECT_SOURCE_DIR}/cmake/detours_add_cmake.cmake
+
+    OVERRIDE_FIND_PACKAGE
+  )
+  FetchContent_MakeAvailable(detours)
+endif()
+
+# Check for presence of at least one hooking library (right now only Detours lib is available)
+if(NOT SMGM_USE_DETOURS)
+  message(FATAL_ERROR "At least one hooking library is required to build this project")
+endif()
 
 set(SMGM_USE_IMGUI ON CACHE BOOL "Use ImGui for in-game configuration of the mod")
 
@@ -41,13 +63,13 @@ add_library(${TARGET_NAME} SHARED
 )
 set_target_properties(${TARGET_NAME} PROPERTIES LINKER_LANGUAGE CXX)
 target_compile_definitions(${TARGET_NAME}
+  PUBLIC ${Boost_DEFINITIONS}
   PUBLIC BOOST_USE_WINAPI_VERSION=1536 # <= Win Vista
   PUBLIC NOMINMAX
   PRIVATE _CRT_SECURE_NO_WARNINGS
   PRIVATE _SILENCE_CXX17_CODECVT_HEADER_DEPRECATION_WARNING
   PUBLIC DIRECTINPUT_VERSION=0x0800
-
-  PUBLIC SMGM_TITLE="SMGM"
+  PUBLIC SMGM_TITLE="${PROJECT_NAME}"
 )
 
 if(SMGM_NO_CONSOLE)
@@ -60,19 +82,27 @@ target_link_directories(${TARGET_NAME}
   PRIVATE ${PROJECT_SOURCE_DIR}/lib
 )
 target_include_directories(${TARGET_NAME}
-  PRIVATE ${BOOST_INCLUDE_DIR}
-  PRIVATE ${SPDLOG_INCLUDE_DIR}
+  PUBLIC ${Boost_INCLUDE_DIR}
   PUBLIC ${CMAKE_CURRENT_BINARY_DIR}
   PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include
   PUBLIC ${imgui_SOURCE_DIR}
 )
+
 target_link_libraries(${TARGET_NAME}
-  PUBLIC detours
   PUBLIC fmt::fmt
-  PUBLIC Boost::Boost
   PUBLIC dinput8
+  PUBLIC boost::boost
   PUBLIC dxguid
   PUBLIC xinput
   PRIVATE $<TARGET_OBJECTS:ImGui>
 )
-add_dependencies(${TARGET_NAME} DetoursLib)
+
+if(SMGM_USE_DETOURS)
+  find_package(detours REQUIRED)
+  target_compile_definitions(${TARGET_NAME}
+    PRIVATE SMGM_USE_DETOURS
+  )
+  target_link_libraries(${TARGET_NAME}
+    PRIVATE detours
+  )
+endif()
