@@ -98,7 +98,6 @@ target_link_libraries(${TARGET_NAME}
 )
 
 if(SMGM_USE_DETOURS)
-  find_package(detours REQUIRED)
   target_compile_definitions(${TARGET_NAME}
     PRIVATE SMGM_USE_DETOURS
   )

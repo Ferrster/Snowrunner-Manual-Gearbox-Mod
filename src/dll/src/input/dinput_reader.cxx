@@ -138,7 +138,7 @@ bool DirectInputReader::BindAction(const std::string& device_guid,
   kbs.emplace_back(kb, cb);
 
   LOG_INFO(fmt::format("Created keybind {} for action {}", kb.ToString(),
-                       kb.action));
+                       (int)kb.action));
 
   return true;
 }
