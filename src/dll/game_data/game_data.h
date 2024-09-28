@@ -18,13 +18,13 @@ inline const float PowerCoefLowGear = .45f;
 inline const float PowerCoefLowPlusGear = 1.f;
 inline const float PowerCoefLowMinusGear = .2f;
 
-SMGM_DECLARE_PTR(0x29A88B8, combine_TRUCK_CONTROL *, TruckControlPtr);
+SMGM_DECLARE_PTR(0x29AE898, combine_TRUCK_CONTROL *, TruckControlPtr);
 } // namespace GameRelatedData
 
 // SMGM_GAME_FUNCTION(0xD5D0B0, void, SwitchAWD, Vehicle *, bool);
-SMGM_GAME_FUNCTION(0xD50510, bool, ShiftGear, Vehicle *, std::int32_t);
-SMGM_GAME_FUNCTION(0xD50270, std::int32_t, GetMaxGear, const Vehicle *);
-SMGM_GAME_FUNCTION(0xD502C0, void, ShiftToAutoGear, Vehicle *);
-SMGM_GAME_FUNCTION(0xD4F6B0, void, SetPowerCoef, Vehicle *, float);
-SMGM_GAME_FUNCTION(0xAC9C50, void, SetCurrentVehicle, combine_TRUCK_CONTROL *,
+SMGM_GAME_FUNCTION(0xD51060, bool, ShiftGear, Vehicle *, std::int32_t);
+SMGM_GAME_FUNCTION(0xD50DC0, std::int32_t, GetMaxGear, const Vehicle *);
+SMGM_GAME_FUNCTION(0xD50E10, void, ShiftToAutoGear, Vehicle *);
+SMGM_GAME_FUNCTION(0xD50200, void, SetPowerCoef, Vehicle *, float);
+SMGM_GAME_FUNCTION(0xAC9F30, void, SetCurrentVehicle, combine_TRUCK_CONTROL *,
                    Vehicle *);

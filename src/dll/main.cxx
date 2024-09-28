@@ -53,7 +53,7 @@ void Init(HINSTANCE hinst, DWORD dwReason, LPVOID reserved) {
   spdlog::set_level(spdlog::level::debug);
   spdlog::set_pattern("[%H:%M:%S %z] [%n] [%^---%L---%$] [thread %t] %v");
 
-  LOG_DEBUG("SnowRunner Manual Gearbox v0.1.11");
+  LOG_DEBUG("SnowRunner Manual Gearbox v0.1.12");
 
 #ifdef SMGM_USE_DETOURS
   DetourRestoreAfterWith();
