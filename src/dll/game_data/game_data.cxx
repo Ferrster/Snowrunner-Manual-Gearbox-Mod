@@ -1,12 +1,18 @@
 #include "game_data/game_data.h"
+
+#include "config/ini_config.hpp"
 #include "game_data/data_types.h"
 #include "utils/format_helpers.h"
 #include "utils/hooks.h"
 #include "utils/logging.h"
 
+#include <algorithm>
+
 // void SMGM_HOOK_NAME(SwitchAWD)(Vehicle *veh, bool enabled) {
 //   SwitchAWD(veh, enabled);
 // }
+
+extern smgm::IniConfig g_IniConfig;
 
 bool SMGM_HOOK_NAME(ShiftGear)(Vehicle *veh, std::int32_t gear) {
   LOG_DEBUG(fmt::format("[ {} ] Switching gear: {} => {}", FormatPointer(veh),
@@ -20,11 +26,38 @@ std::int32_t SMGM_HOOK_NAME(GetMaxGear)(const Vehicle *veh) {
 }
 
 void SMGM_HOOK_NAME(ShiftToAutoGear)(Vehicle *veh) {
-  LOG_DEBUG(fmt::format("[ {} ] Switching to Auto gear", FormatPointer(veh)));
+  if (g_IniConfig.Get<bool>("SMGM.DisableGameShifting")) {
+    return;
+  }
 
-  SMGM_CALL_ORIG_FN(::ShiftToAutoGear, veh);
-  veh->TruckAction->AutoGearSwitch = false;
-  SMGM_CALL_HOOK(ShiftGear, veh, 1);
+  SMGM_CALL_ORIG_FN(ShiftToAutoGear, veh);
+  veh->TruckAction->IsInAutoMode = false;
+}
+
+bool SMGM_HOOK_NAME(ShiftToReverse)(Vehicle *veh) {
+  if (g_IniConfig.Get<bool>("SMGM.DisableGameShifting")) {
+    return false;
+  }
+
+  return SMGM_CALL_ORIG_FN(ShiftToReverse, veh);
+}
+
+bool SMGM_HOOK_NAME(ShiftToNeutral)(Vehicle *veh) {
+  if (g_IniConfig.Get<bool>("SMGM.DisableGameShifting")) {
+    return false;
+  }
+
+  return SMGM_CALL_ORIG_FN(::ShiftToNeutral, veh);
+}
+
+bool SMGM_HOOK_NAME(ShiftToHigh)(Vehicle *veh) { return false; }
+
+bool SMGM_HOOK_NAME(DisableAutoAndShift)(Vehicle *veh, std::int32_t gear) {
+  if (g_IniConfig.Get<bool>("SMGM.DisableGameShifting")) {
+    return false;
+  }
+
+  return SMGM_CALL_ORIG_FN(DisableAutoAndShift, veh, gear);
 }
 
 void SMGM_HOOK_NAME(SetPowerCoef)(Vehicle *veh, float coef) {
@@ -38,6 +71,6 @@ void SMGM_HOOK_NAME(SetCurrentVehicle)(combine_TRUCK_CONTROL *truckCtrl,
   LOG_DEBUG(fmt::format("Current vehicle changed to {}", FormatPointer(veh)));
 
   if (veh) {
-    veh->TruckAction->AutoGearSwitch = false;
+    veh->TruckAction->IsInAutoMode = false;
   }
 }

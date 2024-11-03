@@ -12,20 +12,24 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(SMGM_NO_CONSOLE OFF CACHE BOOL "Do not use console window for log display")
 set(SMGM_USE_DETOURS ON CACHE BOOL "Use detours for hooking")
 
+add_compile_definitions(
+    _SILENCE_ALL_MS_EXT_DEPRECATION_WARNINGS
+)
+
 if(SMGM_USE_DETOURS)
   set(SMGM_PATH_TO_VCVARS64 "G:\\Programs\\Visual Studio 19\\VC\\Auxiliary\\Build\\vcvars64.bat" CACHE PATH "Path to vcvars64.bat. Needed to build detours library")
   include(ExternalProject)
   ExternalProject_Add(DetoursLib
-    GIT_REPOSITORY https://github.com/microsoft/Detours.git
-    GIT_TAG origin/main
-    CONFIGURE_COMMAND ""
-    BUILD_COMMAND ""
-    INSTALL_COMMAND ""
+      GIT_REPOSITORY https://github.com/microsoft/Detours.git
+      GIT_TAG origin/main
+      CONFIGURE_COMMAND ""
+      BUILD_COMMAND ""
+      INSTALL_COMMAND ""
   )
   ExternalProject_Get_Property(DetoursLib SOURCE_DIR)
   ExternalProject_Add_Step(DetoursLib _build
-    COMMAND ${PROJECT_SOURCE_DIR}/misc/build_detours.bat ${SMGM_PATH_TO_VCVARS64} ${SOURCE_DIR}
-    ALWAYS ON
+      COMMAND ${PROJECT_SOURCE_DIR}/misc/build_detours.bat ${SMGM_PATH_TO_VCVARS64} ${SOURCE_DIR}
+      ALWAYS ON
   )
   link_directories(${SOURCE_DIR}/lib.X64)
   include_directories(${SOURCE_DIR}/include)

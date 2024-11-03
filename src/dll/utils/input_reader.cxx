@@ -121,138 +121,121 @@ void InputReader::ProcessKeys() {
   LOG_DEBUG("Finished processing");
 }
 
-bool InputReader::ReadInputConfig(const std::filesystem::path &configPath) {
-  if (!std::filesystem::exists(configPath)) {
-    LOG_DEBUG(fmt::format(
-        "No config file found at path {}. Generating default one...",
-        configPath.string()));
-
-    WriteDefaultConfig(configPath);
-  }
-
+bool InputReader::ReadInputConfig(const IniConfig &config) {
   std::unique_lock lck(m_mtx);
 
-  boost::property_tree::ptree config;
-  try {
-    boost::property_tree::ini_parser::read_ini(configPath.string(), config);
+  static const auto ReadKeybindings =
+      [](const boost::property_tree::ptree &pt,
+         const std::string &key) -> std::unordered_map<WORD, FncOnPressed> {
+    std::unordered_map<WORD, FncOnPressed> result;
 
-    static const auto ReadKeybindings =
-        [](const boost::property_tree::ptree &pt,
-           const std::string &key) -> std::unordered_map<WORD, FncOnPressed> {
-      std::unordered_map<WORD, FncOnPressed> result;
-
-      boost::mp11::mp_for_each<
-          boost::describe::describe_enumerators<InputAction>>([&](auto D) {
-        const auto action = [&]() -> FncOnPressed {
-          static const auto ShiftGearFnc = [](std::int32_t gear) {
-            return [gear] {
-              if (auto *veh = smgm::GetCurrentVehicle()) {
-                veh->ShiftToGear(gear);
-              }
-            };
+    boost::mp11::mp_for_each<
+        boost::describe::describe_enumerators<InputAction>>([&](auto D) {
+      const auto action = [&]() -> FncOnPressed {
+        static const auto ShiftGearFnc = [](std::int32_t gear) {
+          return [gear] {
+            if (auto *veh = smgm::GetCurrentVehicle()) {
+              veh->ShiftToGear(gear);
+            }
           };
+        };
 
-          switch (D.value) {
-          case SHIFT_1_GEAR:
-            return ShiftGearFnc(1);
-          case SHIFT_2_GEAR:
-            return ShiftGearFnc(2);
-          case SHIFT_3_GEAR:
-            return ShiftGearFnc(3);
-          case SHIFT_4_GEAR:
-            return ShiftGearFnc(4);
-          case SHIFT_5_GEAR:
-            return ShiftGearFnc(5);
-          case SHIFT_6_GEAR:
-            return ShiftGearFnc(6);
-          case SHIFT_7_GEAR:
-            return ShiftGearFnc(7);
-          case SHIFT_8_GEAR:
-            return ShiftGearFnc(8);
-          case SHIFT_HIGH_GEAR:
-            return [] {
-              if (auto *veh = smgm::GetCurrentVehicle()) {
-                veh->ShiftToHighGear();
-              }
-            };
-          case SHIFT_LOW_GEAR:
-            return [] {
-              if (auto *veh = smgm::GetCurrentVehicle()) {
-                veh->ShiftToLowGear();
-              }
-            };
-          case SHIFT_LOW_PLUS_GEAR:
-            return [] {
-              if (auto *veh = smgm::GetCurrentVehicle()) {
-                veh->ShiftToLowPlusGear();
-              }
-            };
-          case SHIFT_LOW_MINUS_GEAR:
-            return [] {
-              if (auto *veh = smgm::GetCurrentVehicle()) {
-                veh->ShiftToLowMinusGear();
-              }
-            };
-          case SHIFT_NEUTRAL:
-            return ShiftGearFnc(0);
-          case SHIFT_PREV_AUTO_GEAR:
-            return [] {
-              if (auto *veh = smgm::GetCurrentVehicle()) {
-                veh->ShiftToPrevGear();
-              }
-            };
-          case SHIFT_NEXT_AUTO_GEAR:
-            return [] {
-              if (auto *veh = smgm::GetCurrentVehicle()) {
-                veh->ShiftToNextGear();
-              }
-            };
-          case SHIFT_REVERSE_GEAR:
-            return [] {
-              if (auto *veh = smgm::GetCurrentVehicle()) {
-                veh->ShiftToReverseGear();
-              }
-            };
-          }
-
-          return [] {};
-        }();
-
-        const std::string iniKey = fmt::format("{}.{}", key, D.name);
-        const auto v = pt.get_optional<std::string>(iniKey);
-
-        LOG_DEBUG(fmt::format("{}: {}", iniKey,
-                              v.has_value() ? v.value() : "<empty>"));
-
-        if (v.has_value() && !v.value().empty()) {
-          result.insert({FromHex(v.value()), std::move(action)});
+        switch (D.value) {
+        case SHIFT_1_GEAR:
+          return ShiftGearFnc(1);
+        case SHIFT_2_GEAR:
+          return ShiftGearFnc(2);
+        case SHIFT_3_GEAR:
+          return ShiftGearFnc(3);
+        case SHIFT_4_GEAR:
+          return ShiftGearFnc(4);
+        case SHIFT_5_GEAR:
+          return ShiftGearFnc(5);
+        case SHIFT_6_GEAR:
+          return ShiftGearFnc(6);
+        case SHIFT_7_GEAR:
+          return ShiftGearFnc(7);
+        case SHIFT_8_GEAR:
+          return ShiftGearFnc(8);
+        case SHIFT_HIGH_GEAR:
+          return [] {
+            if (auto *veh = smgm::GetCurrentVehicle()) {
+              veh->ShiftToHighGear();
+            }
+          };
+        case SHIFT_LOW_GEAR:
+          return [] {
+            if (auto *veh = smgm::GetCurrentVehicle()) {
+              veh->ShiftToLowGear();
+            }
+          };
+        case SHIFT_LOW_PLUS_GEAR:
+          return [] {
+            if (auto *veh = smgm::GetCurrentVehicle()) {
+              veh->ShiftToLowPlusGear();
+            }
+          };
+        case SHIFT_LOW_MINUS_GEAR:
+          return [] {
+            if (auto *veh = smgm::GetCurrentVehicle()) {
+              veh->ShiftToLowMinusGear();
+            }
+          };
+        case SHIFT_NEUTRAL:
+          return ShiftGearFnc(0);
+        case SHIFT_PREV_AUTO_GEAR:
+          return [] {
+            if (auto *veh = smgm::GetCurrentVehicle()) {
+              veh->ShiftToPrevGear();
+            }
+          };
+        case SHIFT_NEXT_AUTO_GEAR:
+          return [] {
+            if (auto *veh = smgm::GetCurrentVehicle()) {
+              veh->ShiftToNextGear();
+            }
+          };
+        case SHIFT_REVERSE_GEAR:
+          return [] {
+            if (auto *veh = smgm::GetCurrentVehicle()) {
+              veh->ShiftToReverseGear();
+            }
+          };
         }
-      });
 
-      return result;
-    };
+        return [] {};
+      }();
 
-    for (auto &&[key, fnc] : ReadKeybindings(
-             config, boost::describe::enum_to_string(KEYBOARD, "Keyboard"))) {
-      m_keysKeyboard.emplace(key, KeyInfo{std::move(fnc)});
-    }
+      const std::string iniKey = fmt::format("{}.{}", key, D.name);
+      const auto v = pt.get_optional<std::string>(iniKey);
 
-    for (auto &&[key, fnc] : ReadKeybindings(
-             config, boost::describe::enum_to_string(JOYSTICK, "Joystick"))) {
-      m_keysJoystick.emplace(key, KeyInfo{std::move(fnc)});
-    }
-  } catch (const std::exception &e) {
-    LOG_DEBUG(fmt::format("Failed to read config file: {}", e.what()));
+      LOG_DEBUG(
+          fmt::format("{}: {}", iniKey, v.has_value() ? v.value() : "<empty>"));
 
-    return false;
+      if (v.has_value() && !v.value().empty()) {
+        result.insert({FromHex(v.value()), std::move(action)});
+      }
+    });
+
+    return result;
+  };
+
+  for (auto &&[key, fnc] :
+       ReadKeybindings(config.GetConfig(),
+                       boost::describe::enum_to_string(KEYBOARD, "Keyboard"))) {
+    m_keysKeyboard.emplace(key, KeyInfo{std::move(fnc)});
+  }
+
+  for (auto &&[key, fnc] :
+       ReadKeybindings(config.GetConfig(),
+                       boost::describe::enum_to_string(JOYSTICK, "Joystick"))) {
+    m_keysJoystick.emplace(key, KeyInfo{std::move(fnc)});
   }
 
   return true;
 }
 
-void InputReader::WriteDefaultConfig(const std::filesystem::path &configPath) {
-  boost::property_tree::ptree config;
-
+void InputReader::WriteDefaultConfig(IniConfig &config) {
   boost::mp11::mp_for_each<
       boost::describe::describe_enumerators<InputDeviceType>>(
       [&](auto deInputDeviceType) {
@@ -275,17 +258,13 @@ void InputReader::WriteDefaultConfig(const std::filesystem::path &configPath) {
                                    deviceDefaultKbs.at(deInputAction.value));
               }();
 
-              config.add(fmt::format("{}.{}", deInputDeviceType.name,
-                                     deInputAction.name),
-                         defaultKey);
+              config.GetConfig().put(fmt::format("{}.{}",
+                                                 deInputDeviceType.name,
+                                                 deInputAction.name),
+                                     defaultKey);
             });
       });
-  try {
-    boost::property_tree::ini_parser::write_ini(configPath.string(), config);
-  } catch (const std::exception &e) {
-    LOG_DEBUG(
-        fmt::format("Failed to create default config file: {}", e.what()));
-  }
+  config.Write();
 }
 
 } // namespace smgm

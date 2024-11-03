@@ -18,6 +18,7 @@
 #include <winerror.h>
 #include <winuser.h>
 
+#include "config/ini_config.hpp"
 #include "custom_functions.h"
 #include "game_data/data_types.h"
 #include "game_data/game_data.h"
@@ -29,6 +30,7 @@
 
 std::atomic_bool g_Shutdown = false;
 smgm::InputReader *g_InputReader = nullptr;
+smgm::IniConfig g_IniConfig;
 
 DWORD WINAPI MainThread(LPVOID param) {
   g_InputReader->WaitForThread();
@@ -53,7 +55,9 @@ void Init(HINSTANCE hinst, DWORD dwReason, LPVOID reserved) {
   spdlog::set_level(spdlog::level::debug);
   spdlog::set_pattern("[%H:%M:%S %z] [%n] [%^---%L---%$] [thread %t] %v");
 
-  LOG_DEBUG("SnowRunner Manual Gearbox v0.1.13");
+  LOG_DEBUG("SnowRunner Manual Gearbox v0.1.14");
+
+  g_IniConfig.Read();
 
 #ifdef SMGM_USE_DETOURS
   DetourRestoreAfterWith();
@@ -62,11 +66,11 @@ void Init(HINSTANCE hinst, DWORD dwReason, LPVOID reserved) {
 
   g_InputReader = new smgm::InputReader;
   g_InputReader->BindKeyboard(VK_F1, [] { g_InputReader->Stop(); });
-  g_InputReader->ReadInputConfig(std::filesystem::current_path() / "smgm.ini");
+  g_InputReader->ReadInputConfig(g_IniConfig);
   g_InputReader->Start();
 
   if (Vehicle *veh = smgm::GetCurrentVehicle()) {
-    veh->TruckAction->AutoGearSwitch = false;
+    veh->TruckAction->IsInAutoMode = false;
   }
 
   HMODULE gameBase = GetModuleHandleA(NULL);

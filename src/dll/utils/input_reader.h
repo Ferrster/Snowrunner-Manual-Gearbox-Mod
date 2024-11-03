@@ -2,6 +2,7 @@
 
 #include "Windows.h"
 #include "Xinput.h"
+#include "config/ini_config.hpp"
 #include "custom_functions.h"
 
 #include <atomic>
@@ -43,7 +44,7 @@ private:
 private:
   void ProcessKeys();
 
-  void WriteDefaultConfig(const std::filesystem::path &configPath);
+  void WriteDefaultConfig(IniConfig &config);
 
 public:
   InputReader();
@@ -59,6 +60,6 @@ public:
 
   void WaitForThread();
 
-  bool ReadInputConfig(const std::filesystem::path &configPath);
+  bool ReadInputConfig(const IniConfig &config);
 };
 } // namespace smgm

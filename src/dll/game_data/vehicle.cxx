@@ -1,3 +1,4 @@
+#include "config/ini_config.hpp"
 #include "game_data/data_types.h"
 #include "game_data/game_data.h"
 #include "utils/hooks.h"
@@ -11,9 +12,9 @@ std::int32_t Vehicle::GetMaxGear() const {
 }
 
 bool Vehicle::ShiftToGear(std::int32_t targetGear, float powerCoef) {
-  std::int32_t gear = std::clamp(targetGear, -1, GetMaxGear() + 1);
-
+  const std::int32_t gear = std::clamp(targetGear, -1, GetMaxGear() + 1);
   bool bSwitched = SMGM_CALL_HOOK(ShiftGear, this, gear);
+
   if (bSwitched) {
     SetPowerCoef(powerCoef);
   }

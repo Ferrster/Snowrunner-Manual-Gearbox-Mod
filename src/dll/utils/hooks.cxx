@@ -12,6 +12,10 @@ void AttachHooks() {
   SMGM_ATTACH_HOOK(ShiftGear);
   SMGM_ATTACH_HOOK(GetMaxGear);
   SMGM_ATTACH_HOOK(ShiftToAutoGear);
+  SMGM_ATTACH_HOOK(ShiftToReverse);
+  SMGM_ATTACH_HOOK(ShiftToNeutral);
+  SMGM_ATTACH_HOOK(ShiftToHigh);
+  SMGM_ATTACH_HOOK(DisableAutoAndShift);
   SMGM_ATTACH_HOOK(SetPowerCoef);
   SMGM_ATTACH_HOOK(SetCurrentVehicle);
 
@@ -19,6 +23,7 @@ void AttachHooks() {
   DetourTransactionCommit();
 #endif
 }
+
 void DetachHooks() {
 #ifdef SMGM_USE_DETOURS
   DetourTransactionBegin();
@@ -28,6 +33,10 @@ void DetachHooks() {
   SMGM_DETACH_HOOK(ShiftGear);
   SMGM_DETACH_HOOK(GetMaxGear);
   SMGM_DETACH_HOOK(ShiftToAutoGear);
+  SMGM_DETACH_HOOK(ShiftToReverse);
+  SMGM_DETACH_HOOK(ShiftToNeutral);
+  SMGM_DETACH_HOOK(ShiftToHigh);
+  SMGM_DETACH_HOOK(DisableAutoAndShift);
   SMGM_DETACH_HOOK(SetPowerCoef);
   SMGM_DETACH_HOOK(SetCurrentVehicle);
 

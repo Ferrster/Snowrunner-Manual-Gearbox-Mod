@@ -27,7 +27,7 @@ public:
   char pad_0000[48];          // 0x0000
   class Vehicle *Veh;         // 0x0030
   float PowerCoef;            // 0x0038
-  bool AutoGearSwitch;        // 0x003C
+  bool IsInAutoMode;          // 0x003C
   char pad_003D[3];           // 0x003D
   float WheelTurn;            // 0x0040
   float Accel;                // 0x0044
