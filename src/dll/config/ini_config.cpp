@@ -1,8 +1,11 @@
 #include "config/ini_config.hpp"
 
+#include "utils/input_reader.h"
 #include "utils/logging.h"
 
 #include <boost/property_tree/ini_parser.hpp>
+
+extern smgm::InputReader *g_InputReader;
 
 namespace smgm {
 IniConfig::IniConfig() : m_path("smgm.ini") {}
@@ -43,6 +46,21 @@ bool IniConfig::WriteTo(const std::filesystem::path &path) {
   }
 
   return true;
+}
+
+bool IniConfig::WriteDefaultConfig() {
+  if (std::filesystem::exists(m_path)) {
+    return false;
+  }
+
+  LOG_DEBUG(
+      fmt::format("No config file found at path {}. Generating default one...",
+                  m_path.u8string()));
+
+  g_InputReader->WriteDefaultConfig(*this);
+  WriteDefaultValues();
+
+  return Write();
 }
 
 void IniConfig::WriteDefaultValues() {

@@ -57,7 +57,9 @@ void Init(HINSTANCE hinst, DWORD dwReason, LPVOID reserved) {
 
   LOG_DEBUG("SnowRunner Manual Gearbox v0.1.14");
 
-  g_IniConfig.Read();
+  if (!g_IniConfig.WriteDefaultConfig()) {
+    g_IniConfig.Read();
+  }
 
 #ifdef SMGM_USE_DETOURS
   DetourRestoreAfterWith();

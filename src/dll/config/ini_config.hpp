@@ -55,6 +55,8 @@ public:
     return GetConfig().get<T>(key);
   }
 
+  bool WriteDefaultConfig();
+
 protected:
   void WriteDefaultValues();
 

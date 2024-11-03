@@ -44,8 +44,6 @@ private:
 private:
   void ProcessKeys();
 
-  void WriteDefaultConfig(IniConfig &config);
-
 public:
   InputReader();
   ~InputReader();
@@ -61,5 +59,7 @@ public:
   void WaitForThread();
 
   bool ReadInputConfig(const IniConfig &config);
+
+  void WriteDefaultConfig(IniConfig &config);
 };
 } // namespace smgm

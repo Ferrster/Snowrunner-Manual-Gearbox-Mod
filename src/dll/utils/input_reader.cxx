@@ -264,7 +264,6 @@ void InputReader::WriteDefaultConfig(IniConfig &config) {
                                      defaultKey);
             });
       });
-  config.Write();
 }
 
 } // namespace smgm
