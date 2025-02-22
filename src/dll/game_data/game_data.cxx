@@ -50,7 +50,13 @@ bool SMGM_HOOK_NAME(ShiftToNeutral)(Vehicle *veh) {
   return SMGM_CALL_ORIG_FN(::ShiftToNeutral, veh);
 }
 
-bool SMGM_HOOK_NAME(ShiftToHigh)(Vehicle *veh) { return false; }
+bool SMGM_HOOK_NAME(ShiftToHigh)(Vehicle *veh) {
+  if (g_IniConfig.Get<bool>("SMGM.DisableGameShifting")) {
+    return false;
+  }
+
+  return SMGM_CALL_ORIG_FN(::ShiftToHigh, veh);
+}
 
 bool SMGM_HOOK_NAME(DisableAutoAndShift)(Vehicle *veh, std::int32_t gear) {
   if (g_IniConfig.Get<bool>("SMGM.DisableGameShifting")) {
@@ -61,6 +67,11 @@ bool SMGM_HOOK_NAME(DisableAutoAndShift)(Vehicle *veh, std::int32_t gear) {
 }
 
 void SMGM_HOOK_NAME(SetPowerCoef)(Vehicle *veh, float coef) {
+  if (g_IniConfig.Get<bool>("SMGM.DisableGameShifting")) {
+    SMGM_CALL_ORIG_FN(SetPowerCoef, veh, GameRelatedData::PowerCoefLowPlusGear);
+    return;
+  }
+
   SMGM_CALL_ORIG_FN(SetPowerCoef, veh, coef);
 }
 
